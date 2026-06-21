@@ -35,6 +35,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Middleware de Segurança para Injeção de Cabeçalhos OWASP
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';"
+    return response
+
 
 # Schemas de Entrada/Saída Pydantic
 class UserRegister(BaseModel):
@@ -245,15 +256,18 @@ def task_processar_peca(processo_id: int, dados: dict, pasta_saida: str):
     """Tarefa assíncrona de geração de petição com RAG e preenchimento de template."""
     try:
         fundamentacao, pedidos = generate_legal_text(dados)
-        nome_arquivo = f"{dados['tipo_peca']}_{dados['nome_cliente'].replace(' ', '_')}.docx"
+        # Sanitizar tipo_peca e nome_cliente para evitar Directory Traversal
+        tipo_peca_limpo = "".join([c for c in dados['tipo_peca'] if c.isalnum() or c in (' ', '_', '-')]).strip()
+        tipo_peca_limpo = tipo_peca_limpo.replace(' ', '_')
+        
+        nome_cliente_limpo = "".join([c for c in dados['nome_cliente'] if c.isalnum() or c in (' ', '_', '-')]).strip()
+        nome_cliente_limpo = nome_cliente_limpo.replace(' ', '_')
+        
+        nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}.docx"
         
         # Buscar pasta de saída ativa configurada
         pasta_ativa = db.buscar_pasta_ativa()
         diretorio_base = pasta_ativa if pasta_ativa else pasta_saida
-        
-        # Criar subpasta com nome do cliente de forma segura
-        nome_cliente_limpo = "".join([c for c in dados['nome_cliente'] if c.isalnum() or c in (' ', '_', '-')]).strip()
-        nome_cliente_limpo = nome_cliente_limpo.replace(' ', '_')
         
         pasta_cliente = os.path.join(diretorio_base, nome_cliente_limpo)
         os.makedirs(pasta_cliente, exist_ok=True)
@@ -556,15 +570,20 @@ def aprovar_peca(
             "resumo_fatos": contexto_dinamico.get("resumo_fatos", "")
         }
         
-        # Criar nome de arquivo final
-        nome_arquivo = f"{dados_docx['tipo_peca']}_{cliente.replace(' ', '_')}_FINAL.docx"
+        # Sanitizar tipo_peca e nome_cliente para evitar Directory Traversal
+        tipo_peca_limpo = "".join([c for c in dados_docx['tipo_peca'] if c.isalnum() or c in (' ', '_', '-')]).strip()
+        tipo_peca_limpo = tipo_peca_limpo.replace(' ', '_')
+        
+        nome_cliente_limpo = "".join([c for c in cliente if c.isalnum() or c in (' ', '_', '-')]).strip()
+        nome_cliente_limpo = nome_cliente_limpo.replace(' ', '_')
+        
+        # Criar nome de arquivo final de forma segura
+        nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}_FINAL.docx"
         
         # Buscar diretório de saída
         pasta_ativa = db.buscar_pasta_ativa()
         diretorio_base = pasta_ativa if pasta_ativa else "revisoes_geradas"
         
-        nome_cliente_limpo = "".join([c for c in cliente if c.isalnum() or c in (' ', '_', '-')]).strip()
-        nome_cliente_limpo = nome_cliente_limpo.replace(' ', '_')
         pasta_cliente = os.path.join(diretorio_base, nome_cliente_limpo)
         os.makedirs(pasta_cliente, exist_ok=True)
         
