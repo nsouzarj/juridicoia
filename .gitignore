@@ -1,0 +1,51 @@
+# Ignorar arquivos .env (Segurança de credenciais)
+.env
+**/.env
+
+# Ignorar pastas de ambiente e cache do Python
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+
+# Ignorar dependências e builds do Frontend (Node)
+node_modules/
+dist/
+build/
+.eslintcache
+
+# Caches e arquivos temporários do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Ignorar arquivos .md por padrão em todo o projeto (ex: instruções da IA, anotações locais)
+*.md
+**/*.md
+
+# Abrir exceção para README.md e FLUXOS.md na raiz e subpastas de código
+!/README.md
+!/readme.md
+!/FLUXOS.md
+!/fluxos.md
+!/backend/**/*.md
+!/frontend/**/*.md
+
+# Ignorar PDFs, documentos do Word e imagens/diagramas soltos na raiz
+/*.pdf
+/*.docx
+/*.png
+
+# Ignorar pastas de saída de testes e execuções em lote
+/output_test_lote/
+/saida_lote/
+/saida_teste/
+/revisoes_15_06_2026/
+/revisoes_19_06_2026/
+
+# Ignorar a pasta de regras e ferramentas internas da IA (AG Kit)
+.agents/

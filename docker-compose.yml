@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg15
+    container_name: juridico_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-senha}
+      POSTGRES_DB: ${DB_NAME:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - /home/pg/data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    container_name: juridico_web
+    restart: always
+    ports:
+      - "8501:8501"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME:-postgres}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASS=${DB_PASS:-senha}
+      - DB_PORT=5432
+    depends_on:
+      - db
+    volumes:
+      - ./revisoes_geradas:/app/revisoes_geradas
+
+  worker:
+    build: .
+    container_name: juridico_worker
+    restart: always
+    command: ["python", "robo_banco.py"]
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DB_HOST=db
+      - DB_NAME=${DB_NAME:-postgres}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASS=${DB_PASS:-senha}
+      - DB_PORT=5432
+    depends_on:
+      - db
+    volumes:
+      - ./revisoes_geradas:/app/saida_lote_banco
+
+volumes:
+  pgdata:

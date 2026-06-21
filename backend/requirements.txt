@@ -1,0 +1,13 @@
+httpx
+
+python-dotenv
+streamlit
+psycopg2-binary
+fastapi
+uvicorn
+argon2-cffi
+pyjwt
+pydantic
+email-validator
+pytest
+respx

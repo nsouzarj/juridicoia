@@ -1,0 +1,519 @@
+import streamlit as st
+import pandas as pd
+import requests
+import os
+import time
+
+# URL do Backend FastAPI
+API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")
+
+# Configuração da Página
+st.set_page_config(page_title="Automação Jurídica RAG", page_icon="⚖️", layout="wide")
+
+# Estado de Sessão
+if "token" not in st.session_state:
+    st.session_state.token = None
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+# Função auxiliar para Headers HTTP
+def get_headers():
+    if st.session_state.token:
+        return {"Authorization": f"Bearer {st.session_state.token}"}
+    return {}
+
+# 1. Tela de Login (Sem Token ativo)
+if st.session_state.token is None:
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Outfit:wght@300;400;600;700&display=swap');
+    
+    /* Configuração da página inteira */
+    [data-testid="stAppViewContainer"] {
+        background-color: #08090A !important;
+        background-image: radial-gradient(rgba(197, 168, 128, 0.02) 1px, transparent 0) !important;
+        background-size: 24px 24px !important;
+    }
+    
+    header, footer {
+        visibility: hidden !important;
+    }
+    
+    /* Fontes globais */
+    .stMarkdown, p, label, input, button {
+        font-family: 'Outfit', sans-serif !important;
+    }
+    
+    /* Tipografia Brutalista Dourada */
+    .hero-title {
+        font-family: 'Cinzel', serif !important;
+        font-size: 64px;
+        font-weight: 800;
+        line-height: 0.95;
+        color: #C5A880;
+        letter-spacing: -2px;
+        margin-top: 80px;
+        margin-bottom: 10px;
+        text-shadow: 0 0 30px rgba(197, 168, 128, 0.1);
+    }
+    
+    .hero-subtitle {
+        font-size: 14px;
+        color: #8C929E;
+        font-weight: 300;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 40px;
+    }
+    
+    /* Formulário de Login Brutal */
+    .login-box {
+        border-left: 1px solid rgba(197, 168, 128, 0.3);
+        padding-left: 45px;
+        margin-top: 80px;
+    }
+    
+    .login-section-title {
+        font-family: 'Cinzel', serif !important;
+        font-size: 20px;
+        color: #F8F9FA;
+        margin-bottom: 25px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    
+    /* Customizando os inputs e botões padrão do Streamlit via CSS */
+    div[data-baseweb="input"] {
+        border-radius: 0px !important;
+        background-color: #121417 !important;
+        border: 1px solid #2C2F36 !important;
+    }
+    
+    div[data-baseweb="input"]:focus-within {
+        border: 1px solid #C5A880 !important;
+    }
+    
+    input {
+        color: #F8F9FA !important;
+    }
+    
+    button[kind="primary"] {
+        background-color: #C5A880 !important;
+        color: #08090A !important;
+        font-weight: 700 !important;
+        border-radius: 0px !important;
+        border: 1px solid #C5A880 !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        height: 44px;
+    }
+    
+    button[kind="primary"]:hover {
+        background-color: transparent !important;
+        color: #C5A880 !important;
+        box-shadow: 0 0 15px rgba(197, 168, 128, 0.2);
+    }
+    
+    /* Customizando labels padrão do Streamlit */
+    label {
+        color: #8C929E !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        letter-spacing: 1px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns([6, 4])
+    
+    with col1:
+        st.markdown('<div class="hero-title">P R A X I S<br>A U T O M A T I O N</div>', unsafe_allow_html=True)
+        st.markdown('<div class="hero-subtitle">Sistema de Elaboração de Peças Jurídicas & RAG Vetorial</div>', unsafe_allow_html=True)
+        st.markdown('<div style="height: 1px; width: 60px; background-color: #C5A880; margin-bottom: 25px;"></div>', unsafe_allow_html=True)
+        st.markdown('<p style="color: #6C727E; font-size: 13px; max-width: 460px; line-height: 1.6; font-weight: 300;">Plataforma corporativa de alta precisão para contencioso cível. Processamento inteligente de ementas integrado com PostgreSQL pgvector e segmentação estrita de matérias.</p>', unsafe_allow_html=True)
+        
+    with col2:
+        st.markdown('<div class="login-box">', unsafe_allow_html=True)
+        st.markdown('<div class="login-section-title">ACESSAR FILA</div>', unsafe_allow_html=True)
+        
+        email = st.text_input("E-MAIL CORPORATIVO", placeholder="exemplo@escritorio.com")
+        senha = st.text_input("SENHA", type="password", placeholder="••••••••")
+        
+        st.markdown('<div style="height: 15px;"></div>', unsafe_allow_html=True)
+        
+        if st.button("🔓 ENTRAR NO SISTEMA", type="primary", use_container_width=True):
+            if email and senha:
+                try:
+                    response = requests.post(f"{API_URL}/auth/login", json={"email": email, "senha": senha})
+                    if response.status_code == 200:
+                        token_data = response.json()
+                        st.session_state.token = token_data["access_token"]
+                        
+                        user_resp = requests.get(f"{API_URL}/auth/me", headers=get_headers())
+                        if user_resp.status_code == 200:
+                            st.session_state.user = user_resp.json()
+                            st.rerun()
+                        else:
+                            st.session_state.token = None
+                            st.error("Erro ao carregar credenciais do usuário.")
+                    elif response.status_code == 401:
+                        st.error("E-mail ou senha incorretos.")
+                    else:
+                        st.error(f"Erro na conexão: {response.text}")
+                except Exception as e:
+                    st.error(f"Erro ao conectar com a API: {e}")
+            else:
+                st.warning("Preencha todos os campos.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# 2. Interface Logada (Com Token)
+else:
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Outfit:wght@300;400;600;700&display=swap');
+    
+    html, body, [class*="css"], .stMarkdown {
+        font-family: 'Outfit', sans-serif !important;
+    }
+    
+    /* Configuração da página inteira */
+    [data-testid="stAppViewContainer"] {
+        background-color: #08090A !important;
+    }
+    
+    /* Títulos */
+    h1, h2, h3, h4 {
+        font-family: 'Cinzel', serif !important;
+        color: #F8F9FA !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px;
+    }
+    
+    .gradient-text {
+        font-family: 'Cinzel', serif !important;
+        color: #C5A880 !important;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(197, 168, 128, 0.15);
+        padding-bottom: 10px;
+    }
+    
+    /* Botões do Streamlit */
+    button[kind="primary"] {
+        background-color: #C5A880 !important;
+        color: #08090A !important;
+        font-weight: 700 !important;
+        border-radius: 0px !important;
+        border: 1px solid #C5A880 !important;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+    
+    button[kind="primary"]:hover {
+        background-color: transparent !important;
+        color: #C5A880 !important;
+    }
+    
+    button[kind="secondary"] {
+        border-radius: 0px !important;
+        border: 1px solid #2C2F36 !important;
+        background-color: #121417 !important;
+        color: #F8F9FA !important;
+        font-weight: 500;
+    }
+    
+    button[kind="secondary"]:hover {
+        border: 1px solid #C5A880 !important;
+        color: #C5A880 !important;
+    }
+    
+    /* Inputs do Streamlit */
+    div[data-baseweb="input"], div[data-baseweb="select"], div[data-baseweb="textarea"] {
+        border-radius: 0px !important;
+        background-color: #121417 !important;
+        border: 1px solid #2C2F36 !important;
+    }
+    
+    div[data-baseweb="input"]:focus-within {
+        border: 1px solid #C5A880 !important;
+    }
+    
+    /* Dataframe do Streamlit */
+    div[data-testid="stDataFrame"] {
+        border-radius: 0px !important;
+        border: 1px solid #2C2F36 !important;
+    }
+    
+    /* Abas */
+    button[data-baseweb="tab"] {
+        font-family: 'Cinzel', serif !important;
+        font-weight: 700 !important;
+        color: #8C929E !important;
+        font-size: 14px;
+        letter-spacing: 1px;
+    }
+    
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #C5A880 !important;
+        border-bottom-color: #C5A880 !important;
+    }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #0E1114 !important;
+        border-right: 1px solid #2C2F36 !important;
+    }
+    
+    /* Customizando labels quando logado */
+    label {
+        color: #8C929E !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    user = st.session_state.user
+    
+    # Barra Lateral
+    st.sidebar.markdown('<h3 style="margin-top:20px;">SISTEMA</h3>', unsafe_allow_html=True)
+    st.sidebar.markdown(f"**Operador:** {user.get('nome')}")
+    st.sidebar.markdown(f"**Perfil:** `{user.get('cargo').upper()}`")
+    st.sidebar.markdown(f"**E-mail:** {user.get('email')}")
+    st.sidebar.markdown("---")
+    
+    if st.sidebar.button("🚪 LOGOUT", use_container_width=True):
+        st.session_state.token = None
+        st.session_state.user = None
+        st.rerun()
+        
+    st.markdown('<h1 class="gradient-text">P R A X I S // AUTOMAÇÃO</h1>', unsafe_allow_html=True)
+    
+    # Define abas
+    tabs_labels = ["📊 FILA DE PEÇAS", "📚 COFRE RAG"]
+    if user.get("cargo") == "admin":
+        tabs_labels.append("👥 USUÁRIOS")
+        
+    tabs = st.tabs(tabs_labels)
+    
+    # Aba 1: Fila de Peças e Upload de Casos
+    with tabs[0]:
+        st.markdown("### Fila de Casos (Urgência por Prazo)")
+        
+        # Busca fila ativa
+        try:
+            resp = requests.get(f"{API_URL}/processos", headers=get_headers())
+            if resp.status_code == 200:
+                processos = resp.json()
+                if processos:
+                    df = pd.DataFrame(processos)
+                    df_exibicao = pd.DataFrame({
+                        "ID": df["id"],
+                        "Processo": df["numero_processo"],
+                        "Cliente": df["cliente"],
+                        "Status": df["status"],
+                        "Prazo Limite": df["data_prazo"].fillna("Sem Prazo"),
+                        "Matéria": df["contexto_dinamico"].apply(lambda x: x.get("materia", "Geral")),
+                        "Tipo de Peça": df["contexto_dinamico"].apply(lambda x: x.get("tipo_peca", "Contestação"))
+                    })
+                    st.dataframe(df_exibicao, use_container_width=True, hide_index=True)
+                    
+                    # Acionamento individual
+                    st.markdown("---")
+                    st.markdown("#### Acionar Geração de Minuta com RAG")
+                    proc_id = st.number_input("DIGITE O ID DO PROCESSO:", min_value=1, step=1)
+                    if st.button("🚀 PROCESSAR CASO", type="primary"):
+                        with st.spinner("Enviando comando para o worker..."):
+                            gen_resp = requests.post(f"{API_URL}/processos/{proc_id}/processar", headers=get_headers())
+                            if gen_resp.status_code == 200:
+                                st.success("Processamento iniciado em background! Atualize a página em alguns instantes.")
+                                time.sleep(2)
+                                st.rerun()
+                            else:
+                                st.error(f"Erro: {gen_resp.json().get('detail', 'Erro desconhecido')}")
+                else:
+                    st.info("Nenhum processo pendente na fila.")
+            else:
+                st.error("Erro ao recuperar processos do servidor.")
+        except Exception as e:
+            st.error(f"Falha de conexão: {e}")
+            
+        # Upload de novos casos via CSV
+        st.markdown("---")
+        st.markdown("### Cadastrar Novos Casos na Fila via CSV")
+        uploaded_file = st.file_uploader("SELECIONE A PLANILHA DE PROCESSOS (.CSV)", type=["csv"])
+        
+        if uploaded_file is not None:
+            try:
+                df_csv = pd.read_csv(uploaded_file, delimiter=';')
+                st.write("Pré-visualização da planilha carregada:")
+                st.dataframe(df_csv.head())
+                
+                if st.button("📥 SALVAR CASOS NA FILA"):
+                    sucessos = 0
+                    erros = 0
+                    for index, row in df_csv.iterrows():
+                        teses = str(row.get('teses_principais', '')).split(';')
+                        teses = [t.strip() for t in teses if t.strip()]
+                        
+                        dados_proc = {
+                            "numero_processo": str(row.get('numero_processo', '')),
+                            "cliente": str(row.get('nome_cliente', '')),
+                            "juizo": str(row.get('juizo', 'Juízo Comum')),
+                            "tipo_peca": str(row.get('tipo_peca', 'Contestação')),
+                            "resumo_fatos": str(row.get('resumo_fatos', '')),
+                            "teses_principais": teses,
+                            "materia": str(row.get('materia', 'Geral')),
+                            "data_prazo": row.get('data_prazo') if pd.notna(row.get('data_prazo')) else None
+                        }
+                        
+                        ins_resp = requests.post(f"{API_URL}/processos", json=dados_proc, headers=get_headers())
+                        if ins_resp.status_code == 201:
+                            sucessos += 1
+                        else:
+                            erros += 1
+                    
+                    st.success(f"Carga finalizada! Inseridos: {sucessos} | Duplicados ou Erro: {erros}")
+                    time.sleep(1)
+                    st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao processar planilha: {e}")
+
+    # Aba 2: Cofre de Jurisprudências
+    with tabs[1]:
+        st.markdown("### Banco de Precedentes (Cofre RAG)")
+
+        # Inject Tailwind utilities (once per session)
+        if not st.session_state.get("tailwind_injected"):
+            st.session_state.tailwind_injected = True
+            st.markdown(
+                """
+                <script src=\"https://cdn.tailwindcss.com\"></script>
+                <script>
+                  tailwind.config = {theme:{extend:{colors:{signalOrange: '#FF5722', darkGray: '#212121'}}}};
+                </script>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        # Fetch jurisprudências from backend
+        try:
+            resp = requests.get(f"{API_URL}/jurisprudencia/list", headers=get_headers())
+            jur_data = resp.json() if resp.status_code == 200 else []
+        except Exception as e:
+            st.error(f"Falha ao carregar jurisprudências: {e}")
+            jur_data = []
+
+        # Layout: 10% negative space on the left, 90% content on the right
+        left, right = st.columns([1, 9])
+        with left:
+            st.markdown("<div class=\"h-full w-2 bg-signalOrange\"></div>", unsafe_allow_html=True)
+        with right:
+            for idx, jur in enumerate(jur_data):
+                title = jur.get("ementa", "")[:80].strip()
+                snippet = jur.get("ementa", "")[80:200].strip()
+                with st.expander(f"{title}...", expanded=False):
+                    st.markdown(
+                        f"""
+                        <article class=\"p-4 mb-4 border border-darkGray rounded-lg hover:shadow-lg transition transform hover:scale-105\">
+                          <h3 class=\"text-lg font-bold text-signalOrange\" tabindex=\"0\">{title}...</h3>
+                          <p class=\"text-sm text-gray-300\">{snippet}...</p>
+                          <ul class=\"mt-2 text-xs text-gray-400 space-y-1\">
+                            <li><strong>Tribunal:</strong> {jur.get('tribunal','')}</li>
+                            <li><strong>Processo:</strong> {jur.get('processo','')}</li>
+                            <li><strong>Matéria:</strong> {jur.get('materia','')}</li>
+                          </ul>
+                        </article>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+        
+        # Cadastro manual unitário
+        with st.expander("➕ CADASTRAR PRECEDENTE INDIVIDUAL"):
+            ementa = st.text_area("EMENTA COMPLETA DO JULGADO")
+            tribunal = st.text_input("TRIBUNAL", placeholder="STJ")
+            processo = st.text_input("PROCESSO DE REFERÊNCIA", placeholder="REsp 123456")
+            materia = st.text_input("MATÉRIA JURÍDICA", placeholder="Direito Bancário")
+            
+            if st.button("💾 GRAVAR PRECEDENTE"):
+                if ementa and tribunal and processo and materia:
+                    payload_jur = {
+                        "ementa": ementa,
+                        "tribunal": tribunal,
+                        "processo": processo,
+                        "materia": materia
+                    }
+                    with st.spinner("Gerando vetorização pgvector..."):
+                        jur_resp = requests.post(f"{API_URL}/jurisprudencia", json=payload_jur, headers=get_headers())
+                        if jur_resp.status_code == 201:
+                            st.success("Precedente gravado e vetorizado!")
+                        else:
+                            st.error(f"Falha: {jur_resp.json().get('detail', 'Erro desconhecido')}")
+                else:
+                    st.warning("Preencha todos os campos.")
+
+        # Alimentação em lote (ementas.csv)
+        st.markdown("---")
+        st.markdown("### Importar Jurisprudências em Lote (.CSV)")
+        uploaded_ementas = st.file_uploader("SELECIONE A PLANILHA DE EMENTAS (.CSV)", type=["csv"], key="ementas_csv")
+        
+        if uploaded_ementas is not None:
+            try:
+                df_em = pd.read_csv(uploaded_ementas, delimiter=';')
+                st.write("Pré-visualização das ementas:")
+                st.dataframe(df_em.head())
+                
+                if st.button("⚡ IMPORTAR E VETORIZAR LOTE"):
+                    sucessos = 0
+                    erros = 0
+                    with st.spinner("Calculando embeddings vetoriais..."):
+                        for index, row in df_em.iterrows():
+                            payload_em = {
+                                "ementa": str(row.get('ementa', '')),
+                                "tribunal": str(row.get('tribunal', 'Desconhecido')),
+                                "processo": str(row.get('processo', 'Sem Número')),
+                                "materia": str(row.get('materia', 'Geral'))
+                            }
+                            
+                            ins_em = requests.post(f"{API_URL}/jurisprudencia", json=payload_em, headers=get_headers())
+                            if ins_em.status_code == 201:
+                                sucessos += 1
+                            else:
+                                erros += 1
+                                
+                    st.success(f"Vetorização concluída! Inseridos: {sucessos} | Falhas: {erros}")
+            except Exception as e:
+                st.error(f"Erro no processamento das ementas: {e}")
+
+    # Aba 3: Criação de Contas (Apenas Admin)
+    if user.get("cargo") == "admin":
+        with tabs[2]:
+            st.markdown("### Cadastrar Nova Conta de Funcionário")
+            
+            nome_nov = st.text_input("NOME DO OPERADOR")
+            email_nov = st.text_input("E-MAIL CORPORATIVO")
+            senha_nov = st.text_input("SENHA INICIAL", type="password", placeholder="mínimo 6 caracteres")
+            cargo_nov = st.selectbox("PERFIL DE ACESSO", ["advogado", "admin", "revisor"])
+            
+            if st.button("👤 CADASTRAR OPERADOR", type="primary"):
+                if nome_nov and email_nov and senha_nov and cargo_nov:
+                    payload_nov = {
+                        "nome": nome_nov,
+                        "email": email_nov,
+                        "senha": senha_nov,
+                        "cargo": cargo_nov
+                    }
+                    reg_resp = requests.post(f"{API_URL}/auth/register", json=payload_nov, headers=get_headers())
+                    if reg_resp.status_code == 201:
+                        st.success(f"Conta de usuário criada para {nome_nov}!")
+                        st.balloons()
+                    else:
+                        st.error(f"Erro ao registrar: {reg_resp.json().get('detail', 'Erro desconhecido')}")
+                else:
+                    st.warning("Preencha todos os campos obrigatórios.")

@@ -1,0 +1,12 @@
+{
+  "nome_cliente": "João da Silva",
+  "numero_processo": "0001234-56.2023.8.26.0000",
+  "juizo": "1ª Vara Cível da Comarca de São Paulo/SP",
+  "tipo_peca": "Contestação",
+  "resumo_fatos": "O autor alega que comprou um produto (celular modelo X) e que este apresentou defeito após 2 meses. O autor pede devolução do valor pago e danos morais de R$ 10.000,00. Contudo, o produto foi levado à assistência técnica que constatou mau uso (queda e tela quebrada), invalidando a garantia.",
+  "teses_principais": [
+    "Ausência de responsabilidade civil por culpa exclusiva da vítima (mau uso).",
+    "Inexistência de dano moral (mero aborrecimento e culpa do consumidor).",
+    "Impossibilidade de devolução do valor por perda da garantia legal."
+  ]
+}

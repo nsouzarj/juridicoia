@@ -1,0 +1,112 @@
+{
+  "name": "Automação Jurídica - Geração de Peças",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "gerar-peca",
+        "options": {}
+      },
+      "id": "e2e92c2a-9e12-4c28-9d41-dcafeb1d36d4",
+      "name": "Webhook (Entrada de Dados)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "db4e48b4-82a1-432d-8e41-af5e6f6a7d53"
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-pro",
+        "prompt": "={{ $json.body.resumo_fatos }}",
+        "systemMessage": "Você é um advogado brasileiro experiente. Escreva a fundamentação jurídica de uma peça com base nos fatos fornecidos. Formato: Texto limpo, sem marcações markdown."
+      },
+      "id": "3b1faea0-7a84-482f-87a3-e2e7178a9c3b",
+      "name": "Google Gemini (Fundamentação)",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "title": "={{ $json.body.tipo_peca }} - {{ $json.body.nome_cliente }}",
+        "content": "Excelentíssimo Juiz da {{ $json.body.juizo }}\n\nProcesso: {{ $json.body.numero_processo }}\nCliente: {{ $json.body.nome_cliente }}\n\nFUNDAMENTAÇÃO JURÍDICA:\n{{ $json.text }}"
+      },
+      "id": "7b3b4f66-8a9d-4861-bbbc-36fc813b2de9",
+      "name": "Google Docs (Gerar Peça)",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        750,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "revisoes-juridicas",
+        "text": "=Nova minuta gerada!\nCliente: {{ $('Webhook (Entrada de Dados)').item.json.body.nome_cliente }}\nDocumento criado no Google Docs. Favor revisar.",
+        "otherOptions": {}
+      },
+      "id": "cf6d35c4-7220-40e1-bbde-86a0b94372e6",
+      "name": "Slack (Notificar Equipe)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1000,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook (Entrada de Dados)": {
+      "main": [
+        [
+          {
+            "node": "Google Gemini (Fundamentação)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini (Fundamentação)": {
+      "main": [
+        [
+          {
+            "node": "Google Docs (Gerar Peça)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Docs (Gerar Peça)": {
+      "main": [
+        [
+          {
+            "node": "Slack (Notificar Equipe)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f7d79b29-9e8c-4a3d-b57d-bb62d29cd267"
+}
