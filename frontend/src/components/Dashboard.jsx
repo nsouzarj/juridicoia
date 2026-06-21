@@ -47,6 +47,9 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const [csvProcMsg, setCsvProcMsg] = useState(null);
   const [csvJurMsg, setCsvJurMsg] = useState(null);
   
+  // Global processing indicator state
+  const [processingMessage, setProcessingMessage] = useState(null);
+  
   // Refs for file uploads
   const procFileRef = useRef(null);
   const jurFileRef = useRef(null);
@@ -202,6 +205,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
     e.preventDefault();
     if (!procIdToProcess) return;
     setProcMsg(null);
+    setProcessingMessage('Iniciando processamento da petição...');
 
     try {
       const res = await fetch(`${API_URL}/processos/${procIdToProcess}/processar`, {
@@ -218,6 +222,8 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       }
     } catch (err) {
       setProcMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+    } finally {
+      setProcessingMessage(null);
     }
   };
 
@@ -234,6 +240,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       ? `${API_URL}/jurisprudencia/${editingPrecedent.id}` 
       : `${API_URL}/jurisprudencia`;
     const method = editingPrecedent ? 'PUT' : 'POST';
+    setProcessingMessage(editingPrecedent ? 'Atualizando precedente e recalculando embeddings...' : 'Vetorizando precedente na base de dados...');
 
     try {
       const res = await fetch(url, {
@@ -248,7 +255,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       if (res.ok) {
         setJurMsg({ 
           type: 'success', 
-          text: editingPrecedent ? 'Precedente atualizado e re-vetorizado com sucesso!' : 'Precedente cadastrado e vetorizado com sucesso!' 
+          text: editingPrecedent ? 'Precedente atualizado com sucesso!' : 'Precedente cadastrado com sucesso!' 
         });
         setCadastroJur({ ementa: '', tribunal: '', processo: '', materia: '' });
         setEditingPrecedent(null);
@@ -259,6 +266,8 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       }
     } catch (err) {
       setJurMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+    } finally {
+      setProcessingMessage(null);
     }
   };
 
@@ -290,6 +299,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const handleDeletePrecedent = async () => {
     if (!deletingPrecedent) return;
     setJurMsg(null);
+    setProcessingMessage('Removendo precedente da base de dados...');
     try {
       const res = await fetch(`${API_URL}/jurisprudencia/${deletingPrecedent.id}`, {
         method: 'DELETE',
@@ -306,6 +316,8 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       }
     } catch (err) {
       setJurMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+    } finally {
+      setProcessingMessage(null);
     }
   };
 
@@ -507,6 +519,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const handleBatchProcess = async () => {
     if (selectedProcessIds.length === 0) return;
     setProcMsg(null);
+    setProcessingMessage('Iniciando processamento em lote...');
     try {
       const res = await fetch(`${API_URL}/processos/processar-lote`, {
         method: 'POST',
@@ -529,6 +542,8 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       }
     } catch (err) {
       setProcMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+    } finally {
+      setProcessingMessage(null);
     }
   };
 
@@ -615,6 +630,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const handleReprocessProcess = async () => {
     if (!reviewingProcess) return;
     setReviewMsg(null);
+    setProcessingMessage('Regerando petição com IA e dados RAG...');
     try {
       const saveRes = await fetch(`${API_URL}/processos/${reviewingProcess.id}`, {
         method: 'PUT',
@@ -639,6 +655,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       if (!saveRes.ok) {
         const errData = await saveRes.json();
         setReviewMsg({ type: 'error', text: `Erro ao salvar alterações antes de reprocessar: ${errData.detail}` });
+        setProcessingMessage(null);
         return;
       }
       
@@ -656,12 +673,15 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       }
     } catch (err) {
       setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+    } finally {
+      setProcessingMessage(null);
     }
   };
 
   const handleApproveProcess = async () => {
     if (!reviewingProcess) return;
     setReviewMsg(null);
+    setProcessingMessage('Aprovando petição e gerando documento Word...');
     try {
       const res = await fetch(`${API_URL}/processos/${reviewingProcess.id}/aprovar`, {
         method: 'POST',
@@ -685,6 +705,8 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       }
     } catch (err) {
       setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+    } finally {
+      setProcessingMessage(null);
     }
   };
 
@@ -714,6 +736,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
     const file = e.target.files[0];
     if (!file) return;
     setCsvProcMsg(null);
+    setProcessingMessage('Importando processos do arquivo CSV...');
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -721,6 +744,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
         const rows = parseCSV(event.target.result);
         if (rows.length === 0) {
           setCsvProcMsg({ type: 'error', text: 'Planilha vazia ou em formato incorreto.' });
+          setProcessingMessage(null);
           return;
         }
 
@@ -762,6 +786,8 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
         if (procFileRef.current) procFileRef.current.value = '';
       } catch (err) {
         setCsvProcMsg({ type: 'error', text: `Falha ao processar arquivo: ${err.message}` });
+      } finally {
+        setProcessingMessage(null);
       }
     };
     reader.readAsText(file, 'UTF-8');
@@ -771,6 +797,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
     const file = e.target.files[0];
     if (!file) return;
     setCsvJurMsg(null);
+    setProcessingMessage('Vetorizando jurisprudências em lote RAG... (Isso pode demorar um pouco)');
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -778,6 +805,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
         const rows = parseCSV(event.target.result);
         if (rows.length === 0) {
           setCsvJurMsg({ type: 'error', text: 'Planilha de ementas vazia ou inválida.' });
+          setProcessingMessage(null);
           return;
         }
 
@@ -810,6 +838,8 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
         if (jurFileRef.current) jurFileRef.current.value = '';
       } catch (err) {
         setCsvJurMsg({ type: 'error', text: `Falha no processamento: ${err.message}` });
+      } finally {
+        setProcessingMessage(null);
       }
     };
     reader.readAsText(file, 'UTF-8');
@@ -2016,6 +2046,16 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
           </div>
         )}
       </main>
+      
+      {processingMessage && (
+        <div className="processing-overlay">
+          <div className="processing-card">
+            <div className="spinner-gold"></div>
+            <p className="processing-text font-cinzel">{processingMessage.toUpperCase()}</p>
+            <span className="processing-sub">Conectando aos modelos de IA & Banco Vetorial</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
