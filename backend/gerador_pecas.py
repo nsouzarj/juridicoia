@@ -2,6 +2,8 @@ import json
 import os
 import openrouter_client
 from docx import Document
+from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from dotenv import load_dotenv
 from banco_dados import get_connection
 from alimentar_jurisprudencia import gerar_embedding
@@ -114,11 +116,27 @@ def fill_template(data, fundamentacao, pedidos, template_path='templates/modelo_
     
     # Substitui nos parágrafos normais
     for p in doc.paragraphs:
+        modificado = False
         for key, value in substitutions.items():
             if key in p.text:
-                # Substituição simples preservando estilo base do parágrafo,
-                # para algo mais robusto, é preciso iterar nos 'runs'
                 p.text = p.text.replace(key, value)
+                modificado = True
+                
+        # Ajustes de formatação solicitados
+        if p.text.strip():
+            texto_upper = p.text.upper()
+            if "EXMO" in texto_upper or "EXCELENT" in texto_upper:
+                # Na inicial, onde EXMO..., ficar negrito e fonte Arial 14
+                for run in p.runs:
+                    run.font.bold = True
+                    run.font.size = Pt(14)
+                    run.font.name = 'Arial'
+            elif modificado:
+                # Justifique o texto de modo que fique bem ajustado
+                p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+                for run in p.runs:
+                    run.font.name = 'Arial'
+                    run.font.size = Pt(14)
                 
     # Salva o novo arquivo
     doc.save(output_path)

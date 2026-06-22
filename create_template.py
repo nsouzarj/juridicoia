@@ -10,13 +10,15 @@ def create_template():
     style = doc.styles['Normal']
     font = style.font
     font.name = 'Arial'
-    font.size = Pt(12)
+    font.size = Pt(14)
+    style.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
     # Endereçamento
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = p.add_run("EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DA {{JUIZO}}")
+    run = p.add_run("EXCELENTÍSSIMO SENHOR DOUTOR JUIZ DE DIREITO DO JUIZADO ESPECIAL CÍVEL")
     run.bold = True
+    run.font.size = Pt(14)
     
     doc.add_paragraph("\n")
     doc.add_paragraph("\n")

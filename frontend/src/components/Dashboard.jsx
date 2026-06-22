@@ -3,6 +3,7 @@ import { API_URL } from '../config';
 
 function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const [activeTab, setActiveTab] = useState(0);
+  const [activeRagTab, setActiveRagTab] = useState(0); // 0 = Precedentes, 1 = Matérias Jurídicas
   const [colorTheme, setColorTheme] = useState(() => localStorage.getItem('praxis-color-theme') || 'gold');
   const [navLayout, setNavLayout] = useState(() => localStorage.getItem('praxis-nav-layout') || 'top');
   const [densityLayout, setDensityLayout] = useState(() => localStorage.getItem('praxis-density-layout') || 'default');
@@ -1552,51 +1553,119 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
         {activeTab === 2 && (
           <div className="section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 className="font-cinzel" style={{ margin: 0 }}>Banco de Precedentes (Cofre RAG)</h2>
+              <h2 className="font-cinzel" style={{ margin: 0 }}>Cofre RAG</h2>
+              {activeRagTab === 0 && (
+                <button 
+                  className="btn btn-primary" 
+                  onClick={openCreatePrecedentModal}
+                >
+                  ➕ Cadastrar Precedente
+                </button>
+              )}
+            </div>
+
+            {/* Cabeçalho de sub-abas RAG */}
+            <div className="subtabs-header">
               <button 
-                className="btn btn-primary" 
-                onClick={openCreatePrecedentModal}
+                type="button"
+                onClick={() => setActiveRagTab(0)} 
+                className={`subtab-btn ${activeRagTab === 0 ? 'active' : ''}`}
               >
-                ➕ Cadastrar Precedente
+                ⚖️ Banco de Precedentes
+              </button>
+              <button 
+                type="button"
+                onClick={() => setActiveRagTab(1)} 
+                className={`subtab-btn ${activeRagTab === 1 ? 'active' : ''}`}
+              >
+                📚 Matérias Jurídicas
               </button>
             </div>
 
             {jurMsg && <div className={`alert alert-${jurMsg.type}`} style={{ margin: '15px 0' }}>{jurMsg.text}</div>}
 
-            <div className="cards-layout">
-              <div className="accent-line-col"></div>
-              <div className="cards-container">
-                {jurisprudencias.map((jur) => (
-                  <article key={jur.id} className="precedent-card">
-                    <h3 className="card-title">{jur.ementa.substring(0, 80).trim()}...</h3>
-                    <p className="card-snippet">{jur.ementa.substring(80, 200).trim()}...</p>
-                    <ul className="card-meta">
-                      <li><strong>Tribunal:</strong> {jur.tribunal}</li>
-                      <li><strong>Processo:</strong> {jur.processo_referencia}</li>
-                      <li><strong>Matéria:</strong> {jur.materia}</li>
-                    </ul>
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
-                      <button
-                        type="button"
-                        onClick={() => openEditPrecedentModal(jur)}
-                        className="btn btn-primary"
-                        style={{ margin: 0, padding: '4px 8px', fontSize: '11px' }}
-                      >
-                        ✏️ Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openDeletePrecedentConfirm(jur)}
-                        className="btn btn-secondary"
-                        style={{ margin: 0, padding: '4px 8px', fontSize: '11px', borderColor: 'var(--error)', color: 'var(--error)' }}
-                      >
-                        🗑️ Excluir
-                      </button>
-                    </div>
-                  </article>
-                ))}
+            {/* Sub-aba 0: Precedentes */}
+            {activeRagTab === 0 && (
+              <>
+                <div className="cards-layout">
+                  <div className="accent-line-col"></div>
+                  <div className="cards-container">
+                    {jurisprudencias.length > 0 ? (
+                      jurisprudencias.map((jur) => (
+                        <article key={jur.id} className="precedent-card">
+                          <h3 className="card-title">{jur.ementa.substring(0, 80).trim()}...</h3>
+                          <p className="card-snippet">{jur.ementa.substring(80, 200).trim()}...</p>
+                          <ul className="card-meta">
+                            <li><strong>Tribunal:</strong> {jur.tribunal}</li>
+                            <li><strong>Processo:</strong> {jur.processo_referencia}</li>
+                            <li><strong>Matéria:</strong> {jur.materia}</li>
+                          </ul>
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                            <button
+                              type="button"
+                              onClick={() => openEditPrecedentModal(jur)}
+                              className="btn btn-primary"
+                              style={{ margin: 0, padding: '4px 8px', fontSize: '11px' }}
+                            >
+                              ✏️ Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openDeletePrecedentConfirm(jur)}
+                              className="btn btn-secondary"
+                              style={{ margin: 0, padding: '4px 8px', fontSize: '11px', borderColor: 'var(--error)', color: 'var(--error)' }}
+                            >
+                              🗑️ Excluir
+                            </button>
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <div style={{ gridColumn: '1 / -1', padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                        Nenhum precedente cadastrado.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="sub-section" style={{ marginTop: '20px' }}>
+                  <h3 className="font-cinzel">Importar Jurisprudências em Lote (.CSV)</h3>
+                  <div className="file-uploader">
+                    <span className="upload-icon">⚡</span>
+                    <p className="upload-text"><strong>Selecione a planilha de ementas</strong> ou arraste o arquivo .CSV</p>
+                    <input
+                      ref={jurFileRef}
+                      type="file"
+                      accept=".csv"
+                      className="file-input"
+                      onChange={handleUploadJurisprudencias}
+                    />
+                  </div>
+                  {csvJurMsg && <div className={`alert alert-${csvJurMsg.type}`}>{csvJurMsg.text}</div>}
+                </div>
+              </>
+            )}
+
+            {/* Sub-aba 1: Matérias Jurídicas */}
+            {activeRagTab === 1 && (
+              <div className="sub-section">
+                <h3 className="font-cinzel">📚 Matérias Jurídicas Cadastradas</h3>
+                {materias.length > 0 ? (
+                  <div className="materias-grid">
+                    {materias.map((mat) => (
+                      <div key={mat.id} className="materia-card">
+                        <h4 className="materia-nome">{mat.nome}</h4>
+                        <p className="materia-desc">{mat.descricao}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>
+                    Nenhuma matéria jurídica cadastrada.
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Modal de Cadastro de Precedente */}
             {isPrecedentModalOpen && (
@@ -1688,40 +1757,6 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 </div>
               </div>
             )}
-
-            <div className="sub-section" style={{ marginTop: '30px' }}>
-              <h3 className="font-cinzel">📚 Matérias Jurídicas Cadastradas</h3>
-              {materias.length > 0 ? (
-                <div className="materias-grid">
-                  {materias.map((mat) => (
-                    <div key={mat.id} className="materia-card">
-                      <h4 className="materia-nome">{mat.nome}</h4>
-                      <p className="materia-desc">{mat.descricao}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>
-                  Nenhuma matéria jurídica cadastrada.
-                </div>
-              )}
-            </div>
-
-            <div className="sub-section">
-              <h3 className="font-cinzel">Importar Jurisprudências em Lote (.CSV)</h3>
-              <div className="file-uploader">
-                <span className="upload-icon">⚡</span>
-                <p className="upload-text"><strong>Selecione a planilha de ementas</strong> ou arraste o arquivo .CSV</p>
-                <input
-                  ref={jurFileRef}
-                  type="file"
-                  accept=".csv"
-                  className="file-input"
-                  onChange={handleUploadJurisprudencias}
-                />
-              </div>
-              {csvJurMsg && <div className={`alert alert-${csvJurMsg.type}`}>{csvJurMsg.text}</div>}
-            </div>
           </div>
         )}
 

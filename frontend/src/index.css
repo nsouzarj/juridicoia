@@ -428,6 +428,41 @@ a:hover {
   background-color: var(--accent-gold);
 }
 
+/* Subtabs (RAG screen etc) */
+.subtabs-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+}
+
+.subtab-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--border-radius-base);
+}
+
+.subtab-btn:hover {
+  border-color: var(--accent-gold);
+  color: var(--text-primary);
+}
+
+.subtab-btn.active {
+  background-color: var(--accent-glow);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
 /* Grid & Tables */
 .table-container {
   border: 1px solid var(--border-color);

@@ -272,13 +272,15 @@ def task_processar_peca(processo_id: int, dados: dict, pasta_saida: str):
         nome_cliente_limpo = "".join([c for c in dados['nome_cliente'] if c.isalnum() or c in (' ', '_', '-')]).strip()
         nome_cliente_limpo = nome_cliente_limpo.replace(' ', '_')
         
-        nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}.docx"
+        # Incluir PID para evitar colisão entre processos com mesmo nome de cliente
+        pasta_nome = f"{nome_cliente_limpo}__PID-{processo_id}"
+        nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}__PID-{processo_id}.docx"
         
         # Buscar pasta de saída ativa configurada
         pasta_ativa = db.buscar_pasta_ativa()
         diretorio_base = pasta_ativa if pasta_ativa else pasta_saida
         
-        pasta_cliente = os.path.join(diretorio_base, nome_cliente_limpo)
+        pasta_cliente = os.path.join(diretorio_base, pasta_nome)
         os.makedirs(pasta_cliente, exist_ok=True)
         
         caminho_arquivo = os.path.join(pasta_cliente, nome_arquivo)
@@ -586,14 +588,15 @@ def aprovar_peca(
         nome_cliente_limpo = "".join([c for c in cliente if c.isalnum() or c in (' ', '_', '-')]).strip()
         nome_cliente_limpo = nome_cliente_limpo.replace(' ', '_')
         
-        # Criar nome de arquivo final de forma segura
-        nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}_FINAL.docx"
+        # Incluir PID para evitar colisão entre processos com mesmo nome de cliente
+        pasta_nome = f"{nome_cliente_limpo}__PID-{processo_id}"
+        nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}__PID-{processo_id}_FINAL.docx"
         
         # Buscar diretório de saída
         pasta_ativa = db.buscar_pasta_ativa()
         diretorio_base = pasta_ativa if pasta_ativa else "revisoes_geradas"
         
-        pasta_cliente = os.path.join(diretorio_base, nome_cliente_limpo)
+        pasta_cliente = os.path.join(diretorio_base, pasta_nome)
         os.makedirs(pasta_cliente, exist_ok=True)
         
         caminho_arquivo = os.path.join(pasta_cliente, nome_arquivo)
@@ -746,11 +749,12 @@ def download_processo_docx(
                 tipo_peca = contexto.get("tipo_peca", "Contestação")
                 tipo_peca_limpo = "".join([c for c in tipo_peca if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_')
                 nome_cliente_limpo = "".join([c for c in cliente if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_')
-                nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}_FINAL.docx"
+                pasta_nome = f"{nome_cliente_limpo}__PID-{p_id}"
+                nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}__PID-{p_id}_FINAL.docx"
                 
                 pasta_ativa = db.buscar_pasta_ativa()
                 diretorio_base = pasta_ativa if pasta_ativa else "revisoes_geradas"
-                caminho_docx = os.path.join(diretorio_base, nome_cliente_limpo, nome_arquivo)
+                caminho_docx = os.path.join(diretorio_base, pasta_nome, nome_arquivo)
             
             if not os.path.exists(caminho_docx):
                 raise HTTPException(
@@ -827,12 +831,14 @@ def regerar_docx_processo(
             
             tipo_peca_limpo = "".join([c for c in tipo_peca if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_')
             nome_cliente_limpo = "".join([c for c in cliente if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_')
-            nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}_FINAL.docx"
+            # Incluir PID para evitar colisão entre processos com mesmo nome de cliente
+            pasta_nome = f"{nome_cliente_limpo}__PID-{p_id}"
+            nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}__PID-{p_id}_FINAL.docx"
             
             pasta_ativa = db.buscar_pasta_ativa()
             diretorio_base = pasta_ativa if pasta_ativa else "revisoes_geradas"
             
-            pasta_cliente = os.path.join(diretorio_base, nome_cliente_limpo)
+            pasta_cliente = os.path.join(diretorio_base, pasta_nome)
             os.makedirs(pasta_cliente, exist_ok=True)
             
             caminho_arquivo = os.path.join(pasta_cliente, nome_arquivo)
