@@ -129,6 +129,7 @@ def inicializar_banco():
                 if count == 0:
                     materias_padrao = [
                         ("Direito do Consumidor", "Casos envolvendo relações de consumo, contratos de adesão, cobranças indevidas e indenizações."),
+                        ("Direito Bancário", "Casos envolvendo empréstimos, juros, tarifas, PIX, contratos e fraudes bancárias."),
                         ("Direito Civil", "Contratos, responsabilidade civil, propriedade, posse, direito de família e sucessões."),
                         ("Direito do Trabalho", "Relações de emprego, verbas rescisórias, horas extras, dano moral trabalhista e acordos."),
                         ("Direito Tributário", "Execuções fiscais, repetição de indébito, planejamento tributário, taxas e impostos."),

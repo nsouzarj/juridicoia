@@ -1,10 +1,13 @@
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import io
 from typing import List, Optional
 from datetime import date
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
+from fastapi.responses import StreamingResponse, FileResponse
 from pydantic import BaseModel, EmailStr, Field
 from dotenv import load_dotenv
+from markdown_pdf import MarkdownPdf, Section
 
 import banco_dados as db
 from auth_security import (
@@ -43,7 +46,13 @@ async def add_security_headers(request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none';"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' cdn.jsdelivr.net; "
+        "img-src 'self' data: cdn.jsdelivr.net; "
+        "frame-ancestors 'none';"
+    )
     return response
 
 
@@ -611,6 +620,7 @@ def aprovar_peca(
             )
             
         # Atualizar status para PROTOCOLADO
+        contexto_dinamico["caminho_docx_final"] = caminho_arquivo
         db.atualizar_processo(
             processo_id=processo_id,
             cliente=cliente,
@@ -624,6 +634,238 @@ def aprovar_peca(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao aprovar minuta: {e}")
+    finally:
+        conn.close()
+
+@app.get("/processos/{processo_id}/pdf")
+def download_processo_pdf(
+    processo_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Gera dinamicamente e retorna a petição em PDF."""
+    conn = db.get_connection()
+    if not conn:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao conectar ao banco de dados."
+        )
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, numero_processo, cliente, status, contexto_dinamico FROM processos_lote WHERE id = %s;",
+                (processo_id,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Processo não encontrado.")
+            
+            p_id, num_processo, cliente, status_atual, contexto = row
+            
+            fundamentacao = contexto.get("fundamentacao_revisada") or contexto.get("fundamentacao_gerada") or ""
+            pedidos = contexto.get("pedidos_revisados") or contexto.get("pedidos_gerados") or ""
+            juizo = contexto.get("juizo") or "Juízo não informado"
+            tipo_peca = contexto.get("tipo_peca") or "Petição"
+            resumo_fatos = contexto.get("resumo_fatos") or ""
+            
+            # Remove as tags de GitHub Alerts para evitar problemas de compatibilidade
+            fundamentacao_limpa = fundamentacao.replace("> [!IMPORTANT]", "").replace("> [!WARNING]", "").replace("> [!NOTE]", "")
+            pedidos_limpos = pedidos.replace("> [!IMPORTANT]", "").replace("> [!WARNING]", "").replace("> [!NOTE]", "")
+            
+            md_content = f"""# EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA COMARCA DE {juizo.upper()}
+
+**Processo nº:** {num_processo}  
+**Requerente/Requerido:** {cliente.upper()}  
+
+## {tipo_peca.upper()}
+
+### I. DOS FATOS
+{resumo_fatos}
+
+### II. DA FUNDAMENTAÇÃO JURÍDICA
+{fundamentacao_limpa}
+
+### III. DOS PEDIDOS
+{pedidos_limpos}
+"""
+            
+            # Gera o PDF usando MarkdownPdf
+            pdf = MarkdownPdf(toc_level=2)
+            pdf.add_section(Section(md_content))
+            
+            buf = io.BytesIO()
+            pdf.save_bytes(buf)
+            buf.seek(0)
+            
+            cliente_limpo = "".join([c for c in cliente if c.isalnum() or c in (' ', '_', '-')]).strip()
+            cliente_limpo = cliente_limpo.replace(' ', '_')
+            filename = f"Peca_{cliente_limpo}_{p_id}.pdf"
+            
+            headers = {
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+            return StreamingResponse(buf, media_type="application/pdf", headers=headers)
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao gerar PDF: {e}"
+        )
+    finally:
+        conn.close()
+
+@app.get("/processos/{processo_id}/docx")
+def download_processo_docx(
+    processo_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Retorna o arquivo Word (.docx) oficial da petição."""
+    conn = db.get_connection()
+    if not conn:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao conectar ao banco de dados."
+        )
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, numero_processo, cliente, status, contexto_dinamico FROM processos_lote WHERE id = %s;",
+                (processo_id,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Processo não encontrado.")
+            
+            p_id, num_processo, cliente, status_atual, contexto = row
+            caminho_docx = contexto.get("caminho_docx_final")
+            
+            # Fallback caso não esteja gravado no banco de dados
+            if not caminho_docx:
+                tipo_peca = contexto.get("tipo_peca", "Contestação")
+                tipo_peca_limpo = "".join([c for c in tipo_peca if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_')
+                nome_cliente_limpo = "".join([c for c in cliente if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_')
+                nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}_FINAL.docx"
+                
+                pasta_ativa = db.buscar_pasta_ativa()
+                diretorio_base = pasta_ativa if pasta_ativa else "revisoes_geradas"
+                caminho_docx = os.path.join(diretorio_base, nome_cliente_limpo, nome_arquivo)
+            
+            if not os.path.exists(caminho_docx):
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Arquivo Word não encontrado fisicamente no servidor no caminho: {caminho_docx}"
+                )
+            
+            filename = os.path.basename(caminho_docx)
+            
+            headers = {
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+            
+            return FileResponse(
+                caminho_docx,
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers=headers
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao recuperar arquivo Word: {e}"
+        )
+    finally:
+        conn.close()
+
+@app.post("/processos/{processo_id}/regerar-docx")
+def regerar_docx_processo(
+    processo_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Regera a petição Word no diretório ativo atual e atualiza a rota no banco."""
+    conn = db.get_connection()
+    if not conn:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erro ao conectar ao banco de dados."
+        )
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT id, numero_processo, cliente, status, contexto_dinamico, data_prazo FROM processos_lote WHERE id = %s;",
+                (processo_id,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Processo não encontrado.")
+            
+            p_id, num_processo, cliente, status_atual, contexto, data_prazo = row
+            
+            if status_atual not in ['PROTOCOLADO', 'REVISAO']:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Apenas processos com status REVISAO ou PROTOCOLADO possuem conteúdo gerado para regeração."
+                )
+            
+            fundamentacao = contexto.get("fundamentacao_revisada") or contexto.get("fundamentacao_gerada") or ""
+            pedidos = contexto.get("pedidos_revisados") or contexto.get("pedidos_gerados") or ""
+            juizo = contexto.get("juizo") or "Juízo Comum"
+            tipo_peca = contexto.get("tipo_peca") or "Contestação"
+            resumo_fatos = contexto.get("resumo_fatos") or ""
+            
+            dados_docx = {
+                "nome_cliente": cliente,
+                "numero_processo": num_processo,
+                "juizo": juizo,
+                "tipo_peca": tipo_peca,
+                "resumo_fatos": resumo_fatos
+            }
+            
+            tipo_peca_limpo = "".join([c for c in tipo_peca if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_')
+            nome_cliente_limpo = "".join([c for c in cliente if c.isalnum() or c in (' ', '_', '-')]).strip().replace(' ', '_')
+            nome_arquivo = f"{tipo_peca_limpo}_{nome_cliente_limpo}_FINAL.docx"
+            
+            pasta_ativa = db.buscar_pasta_ativa()
+            diretorio_base = pasta_ativa if pasta_ativa else "revisoes_geradas"
+            
+            pasta_cliente = os.path.join(diretorio_base, nome_cliente_limpo)
+            os.makedirs(pasta_cliente, exist_ok=True)
+            
+            caminho_arquivo = os.path.join(pasta_cliente, nome_arquivo)
+            
+            fill_template(
+                data=dados_docx,
+                fundamentacao=fundamentacao,
+                pedidos=pedidos,
+                output_path=caminho_arquivo
+            )
+            
+            contexto["caminho_docx_final"] = caminho_arquivo
+            
+            db.atualizar_processo(
+                processo_id=p_id,
+                cliente=cliente,
+                contexto_dinamico=contexto,
+                data_prazo=row[5],
+                status=status_atual
+            )
+            
+            return {
+                "message": "Petição Word regerada com sucesso no diretório configurado!",
+                "caminho": caminho_arquivo
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao regerar arquivo Word: {e}"
+        )
     finally:
         conn.close()
 
@@ -909,4 +1151,4 @@ if __name__ == "__main__":
     import uvicorn
     # Executa a inicialização do banco antes de expor a API
     db.inicializar_banco()
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

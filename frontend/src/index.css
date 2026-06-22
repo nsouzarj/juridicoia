@@ -13,6 +13,12 @@
   --error-color: #EF4444;
   --success-color: #10B981;
   --warning-color: #F59E0B;
+
+  /* Geometria Base */
+  --border-radius-base: 6px;
+
+  /* Spacing base */
+  --spacing-multiplier: 1;
 }
 
 :root[data-theme='light'] {
@@ -25,6 +31,56 @@
   --accent-gold: #A08055;
   --accent-gold-hover: #7E6139;
   --accent-glow: rgba(160, 128, 85, 0.08);
+}
+
+/* --- Temas de cores (Dark Mode default) --- */
+:root[data-color-theme='emerald'] {
+  --accent-gold: #10B981;
+  --accent-gold-hover: #34D399;
+  --accent-glow: rgba(16, 185, 129, 0.15);
+}
+:root[data-color-theme='sapphire'] {
+  --accent-gold: #3B82F6;
+  --accent-gold-hover: #60A5FA;
+  --accent-glow: rgba(59, 130, 246, 0.15);
+}
+:root[data-color-theme='burgundy'] {
+  --accent-gold: #E11D48;
+  --accent-gold-hover: #FB7185;
+  --accent-glow: rgba(225, 29, 72, 0.15);
+}
+
+/* --- Temas de cores (Light Mode) --- */
+:root[data-theme='light'][data-color-theme='emerald'] {
+  --accent-gold: #059669;
+  --accent-gold-hover: #047857;
+  --accent-glow: rgba(5, 150, 105, 0.08);
+}
+:root[data-theme='light'][data-color-theme='sapphire'] {
+  --accent-gold: #2563EB;
+  --accent-gold-hover: #1D4ED8;
+  --accent-glow: rgba(37, 99, 235, 0.08);
+}
+:root[data-theme='light'][data-color-theme='burgundy'] {
+  --accent-gold: #BE123C;
+  --accent-gold-hover: #9F1239;
+  --accent-glow: rgba(190, 18, 60, 0.08);
+}
+
+/* --- Customização Geometria --- */
+:root[data-layout-geometry='sharp'] {
+  --border-radius-base: 0px;
+}
+:root[data-layout-geometry='default'] {
+  --border-radius-base: 6px;
+}
+:root[data-layout-geometry='rounded'] {
+  --border-radius-base: 16px;
+}
+
+/* --- Customização de Densidade (Variáveis Globais) --- */
+:root[data-layout-density='compact'] {
+  --spacing-multiplier: 0.65;
 }
 
 * {
@@ -179,6 +235,7 @@ a:hover {
   outline: none;
   transition: all 0.2s ease;
   width: 100%;
+  border-radius: var(--border-radius-base);
 }
 .form-input:focus {
   border-color: var(--accent-gold);
@@ -193,7 +250,7 @@ a:hover {
   text-transform: uppercase;
   font-size: 13px;
   padding: 12px 24px;
-  border-radius: 0;
+  border-radius: var(--border-radius-base);
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
@@ -239,16 +296,25 @@ a:hover {
   border-left: 3px solid;
   font-size: 13px;
   margin-bottom: 15px;
+  border-radius: var(--border-radius-base);
 }
 .alert-error {
   background-color: rgba(239, 68, 68, 0.1);
   border-color: var(--error-color);
   color: #FEE2E2;
 }
+:root[data-theme='light'] .alert-error {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: #991B1B;
+}
 .alert-success {
   background-color: rgba(16, 185, 129, 0.1);
   border-color: var(--success-color);
   color: #D1FAE5;
+}
+:root[data-theme='light'] .alert-success {
+  background-color: rgba(16, 185, 129, 0.08);
+  color: #065F46;
 }
 
 /* Dashboard screen styles */
@@ -368,6 +434,7 @@ a:hover {
   background-color: var(--bg-secondary);
   overflow-x: auto;
   width: 100%;
+  border-radius: var(--border-radius-base);
 }
 
 .custom-table {
@@ -463,6 +530,7 @@ a:hover {
   justify-content: space-between;
   gap: 15px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--border-radius-base);
 }
 .precedent-card:hover {
   transform: translateY(-4px);
@@ -508,6 +576,7 @@ a:hover {
   cursor: pointer;
   transition: border-color 0.2s ease;
   position: relative;
+  border-radius: var(--border-radius-base);
 }
 .file-uploader:hover {
   border-color: var(--accent-gold);
@@ -551,6 +620,7 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  border-radius: var(--border-radius-base);
 }
 
 .form-grid {
@@ -610,6 +680,7 @@ a:hover {
   box-shadow: 0 10px 40px var(--accent-glow);
   transform: translateY(20px);
   animation: slideUp 0.3s forwards cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--border-radius-base);
 }
 
 @keyframes fadeIn {
@@ -660,6 +731,7 @@ a:hover {
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  border-radius: var(--border-radius-base);
 }
 .materia-card:hover {
   border-color: rgba(197, 168, 128, 0.5);
@@ -722,6 +794,7 @@ a:hover {
   max-width: 400px;
   text-align: center;
   animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: var(--border-radius-base);
 }
 
 .spinner-gold {
@@ -761,4 +834,81 @@ a:hover {
 @keyframes scaleIn {
   from { transform: scale(0.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+/* --- Estilos de Navegação Lateral --- */
+:root[data-nav-layout='sidebar'] .tabs-header {
+  display: none; /* Oculta tabs superiores */
+}
+
+/* Sidebar Navigation Panel */
+.sidebar-nav {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px;
+}
+
+.sidebar-nav-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  text-align: left;
+  padding: 10px 14px;
+  width: 100%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  border-radius: var(--border-radius-base);
+}
+
+.sidebar-nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
+}
+
+.sidebar-nav-btn.active {
+  background-color: rgba(197, 168, 128, 0.06);
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+/* --- Estilos para Layout Compacto --- */
+:root[data-layout-density='compact'] .form-input {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+:root[data-layout-density='compact'] .btn {
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+:root[data-layout-density='compact'] .materia-card,
+:root[data-layout-density='compact'] .sidebar-nav-btn {
+  padding: 8px 12px;
+}
+
+:root[data-layout-density='compact'] .metric-card {
+  padding: 12px !important;
+}
+
+:root[data-layout-density='compact'] .sub-section,
+:root[data-layout-density='compact'] .section {
+  padding: 15px !important;
+  margin-bottom: 15px !important;
+}
+
+:root[data-layout-density='compact'] table th,
+:root[data-layout-density='compact'] table td {
+  padding: 8px 12px !important;
+  font-size: 13px;
 }

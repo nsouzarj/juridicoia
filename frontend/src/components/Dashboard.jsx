@@ -3,6 +3,31 @@ import { API_URL } from '../config';
 
 function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const [activeTab, setActiveTab] = useState(0);
+  const [colorTheme, setColorTheme] = useState(() => localStorage.getItem('praxis-color-theme') || 'gold');
+  const [navLayout, setNavLayout] = useState(() => localStorage.getItem('praxis-nav-layout') || 'top');
+  const [densityLayout, setDensityLayout] = useState(() => localStorage.getItem('praxis-density-layout') || 'default');
+  const [geometryLayout, setGeometryLayout] = useState(() => localStorage.getItem('praxis-geometry-layout') || 'default');
+
+  // Sync theme-related states with attributes on document.documentElement
+  useEffect(() => {
+    document.documentElement.setAttribute('data-color-theme', colorTheme);
+    localStorage.setItem('praxis-color-theme', colorTheme);
+  }, [colorTheme]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-nav-layout', navLayout);
+    localStorage.setItem('praxis-nav-layout', navLayout);
+  }, [navLayout]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-layout-density', densityLayout);
+    localStorage.setItem('praxis-density-layout', densityLayout);
+  }, [densityLayout]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-layout-geometry', geometryLayout);
+    localStorage.setItem('praxis-geometry-layout', geometryLayout);
+  }, [geometryLayout]);
   const [processos, setProcessos] = useState([]);
   const [jurisprudencias, setJurisprudencias] = useState([]);
   
@@ -26,6 +51,8 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const [editingUser, setEditingUser] = useState({ id: '', nome: '', email: '', senha: '', cargo: 'advogado' });
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [isDeletePastaOpen, setIsDeletePastaOpen] = useState(false);
+  const [deletingPasta, setDeletingPasta] = useState(null);
   const [stats, setStats] = useState({
     total_processos: 0,
     status_counts: {},
@@ -471,16 +498,25 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
     }
   };
 
-  const handleExcluirPasta = async (pastaId) => {
+  const openDeletePastaConfirm = (pasta) => {
+    setPastaMsg(null);
+    setDeletingPasta(pasta);
+    setIsDeletePastaOpen(true);
+  };
+
+  const handleExcluirPasta = async () => {
+    if (!deletingPasta) return;
     setPastaMsg(null);
     try {
-      const res = await fetch(`${API_URL}/admin/pastas/${pastaId}`, {
+      const res = await fetch(`${API_URL}/admin/pastas/${deletingPasta.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       if (res.ok) {
         setPastaMsg({ type: 'success', text: 'Pasta removida com sucesso!' });
+        setIsDeletePastaOpen(false);
+        setDeletingPasta(null);
         fetchPastas();
       } else {
         setPastaMsg({ type: 'error', text: data.detail || 'Erro ao excluir pasta.' });
@@ -710,6 +746,117 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
     }
   };
 
+  const handleDownloadPDF = async (processoId) => {
+    if (!processoId) return;
+    setReviewMsg(null);
+    setProcessingMessage('Gerando e baixando petição em PDF...');
+    try {
+      const res = await fetch(`${API_URL}/processos/${processoId}/pdf`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        
+        let filename = `Peca_${processoId}.pdf`;
+        const contentDisposition = res.headers.get('Content-Disposition');
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1];
+          }
+        }
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        const data = await res.json();
+        setReviewMsg({ type: 'error', text: data.detail || 'Erro ao baixar petição em PDF.' });
+      }
+    } catch (err) {
+      setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+    } finally {
+      setProcessingMessage(null);
+    }
+  };
+
+  const handleDownloadDocx = async (processoId) => {
+    if (!processoId) return;
+    setReviewMsg(null);
+    setProcessingMessage('Buscando e baixando petição em Word (.docx)...');
+    try {
+      const res = await fetch(`${API_URL}/processos/${processoId}/docx`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        
+        let filename = `Peca_${processoId}.docx`;
+        const contentDisposition = res.headers.get('Content-Disposition');
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1];
+          }
+        }
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        const data = await res.json();
+        setReviewMsg({ type: 'error', text: data.detail || 'Erro ao baixar petição em Word.' });
+      }
+    } catch (err) {
+      setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+    } finally {
+      setProcessingMessage(null);
+    }
+  };
+
+  const handleRegenerateDocx = async (processoId) => {
+    if (!processoId) return;
+    setReviewMsg(null);
+    setProcessingMessage('Regerando petição no diretório ativo atual...');
+    try {
+      const res = await fetch(`${API_URL}/processos/${processoId}/regerar-docx`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setReviewMsg({ type: 'success', text: data.message || 'Petição Word regerada com sucesso!' });
+        fetchProcessos();
+      } else {
+        setReviewMsg({ type: 'error', text: data.detail || 'Erro ao regerar petição Word.' });
+      }
+    } catch (err) {
+      setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+    } finally {
+      setProcessingMessage(null);
+    }
+  };
+
   // Helper function to parse CSV text split by semicolon
   const parseCSV = (text) => {
     const lines = text.split('\n');
@@ -753,7 +900,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
 
         for (const row of rows) {
           const teses = (row.teses_principais || '')
-            .split(';')
+            .split('|')
             .map(t => t.trim())
             .filter(t => t);
 
@@ -877,6 +1024,36 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
               </div>
             </div>
           )}
+          {navLayout === 'sidebar' && (
+            <nav className="sidebar-nav">
+              <button 
+                onClick={() => setActiveTab(0)} 
+                className={`sidebar-nav-btn ${activeTab === 0 ? 'active' : ''}`}
+              >
+                📊 PAINEL
+              </button>
+              <button 
+                onClick={() => setActiveTab(1)} 
+                className={`sidebar-nav-btn ${activeTab === 1 ? 'active' : ''}`}
+              >
+                ⚖️ FILA DE PEÇAS
+              </button>
+              <button 
+                onClick={() => setActiveTab(2)} 
+                className={`sidebar-nav-btn ${activeTab === 2 ? 'active' : ''}`}
+              >
+                📚 COFRE RAG
+              </button>
+              {user && user.cargo === 'admin' && (
+                <button 
+                  onClick={() => setActiveTab(3)} 
+                  className={`sidebar-nav-btn ${activeTab === 3 ? 'active' : ''}`}
+                >
+                  ⚙️ ADMIN / CONFIG
+                </button>
+              )}
+            </nav>
+          )}
         </div>
         <button onClick={onLogout} className="btn btn-secondary" style={{ width: '100%' }}>
           🚪 LOGOUT
@@ -922,10 +1099,10 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
               gap: '20px',
               marginBottom: '30px'
             }}>
-              <div style={{
+              <div className="metric-card" style={{
                 background: 'var(--card-bg, rgba(255, 255, 255, 0.03))',
                 border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-base)',
                 padding: '20px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -938,10 +1115,10 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 <span style={{ fontSize: '36px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '10px', fontFamily: 'Outfit, sans-serif' }}>{stats.total_processos}</span>
               </div>
 
-              <div style={{
+              <div className="metric-card" style={{
                 background: 'var(--card-bg, rgba(255, 255, 255, 0.03))',
                 border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-base)',
                 padding: '20px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -954,10 +1131,10 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 <span style={{ fontSize: '36px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '10px', fontFamily: 'Outfit, sans-serif' }}>{stats.status_counts.PENDENTE || 0}</span>
               </div>
 
-              <div style={{
+              <div className="metric-card" style={{
                 background: 'var(--card-bg, rgba(255, 255, 255, 0.03))',
                 border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-base)',
                 padding: '20px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -970,10 +1147,10 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 <span style={{ fontSize: '36px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '10px', fontFamily: 'Outfit, sans-serif' }}>{stats.status_counts.PROCESSANDO || 0}</span>
               </div>
 
-              <div style={{
+              <div className="metric-card" style={{
                 background: 'var(--card-bg, rgba(255, 255, 255, 0.03))',
                 border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-base)',
                 padding: '20px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -985,6 +1162,22 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 'bold', letterSpacing: '1px' }}>Em Revisão</span>
                 <span style={{ fontSize: '36px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '10px', fontFamily: 'Outfit, sans-serif' }}>{stats.status_counts.REVISAO || 0}</span>
               </div>
+
+              <div className="metric-card" style={{
+                background: 'var(--card-bg, rgba(255, 255, 255, 0.03))',
+                border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
+                borderRadius: 'var(--border-radius-base)',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, height: '4px', width: '100%', backgroundColor: '#1abc9c' }} />
+                <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 'bold', letterSpacing: '1px' }}>Aprovados</span>
+                <span style={{ fontSize: '36px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '10px', fontFamily: 'Outfit, sans-serif' }}>{stats.status_counts.PROTOCOLADO || 0}</span>
+              </div>
             </div>
 
             {/* Dashboard Graphs Section */}
@@ -994,10 +1187,10 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
               gap: '30px'
             }}>
               {/* Status Circle Donut Graph Card */}
-              <div style={{
+              <div className="metric-card" style={{
                 background: 'var(--card-bg, rgba(255, 255, 255, 0.03))',
                 border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-base)',
                 padding: '25px'
               }}>
                 <h3 className="font-cinzel" style={{ fontSize: '16px', marginBottom: '20px', letterSpacing: '1px' }}>Fases da Fila (Status)</h3>
@@ -1015,6 +1208,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                         const pr = stats.status_counts.PROCESSANDO || 0;
                         const rev = stats.status_counts.REVISAO || 0;
                         const err = stats.status_counts.ERRO_PROCESSAMENTO || 0;
+                        const prot = stats.status_counts.PROTOCOLADO || 0;
 
                         const circ = 2 * Math.PI * 40; // 251.32
                         
@@ -1022,12 +1216,14 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                         const prPct = total > 0 ? (pr / total) * circ : 0;
                         const revPct = total > 0 ? (rev / total) * circ : 0;
                         const errPct = total > 0 ? (err / total) * circ : 0;
+                        const protPct = total > 0 ? (prot / total) * circ : 0;
 
                         // Cumulative offsets
                         const pOffset = 0;
                         const prOffset = -pPct;
                         const revOffset = prOffset - prPct;
                         const errOffset = revOffset - revPct;
+                        const protOffset = errOffset - errPct;
 
                         return (
                           <>
@@ -1064,6 +1260,18 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                                 strokeWidth="8" 
                                 strokeDasharray={`${revPct} ${circ}`} 
                                 strokeDashoffset={revOffset} 
+                                transform="rotate(-90 50 50)"
+                              />
+                            )}
+                            {/* PROTOCOLADO */}
+                            {protPct > 0 && (
+                              <circle 
+                                cx="50" cy="50" r="40" 
+                                fill="transparent" 
+                                stroke="#1abc9c" 
+                                strokeWidth="8" 
+                                strokeDasharray={`${protPct} ${circ}`} 
+                                strokeDashoffset={protOffset} 
                                 transform="rotate(-90 50 50)"
                               />
                             )}
@@ -1111,6 +1319,11 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                       <strong style={{ color: 'var(--text-primary)' }}>{stats.status_counts.REVISAO || 0}</strong>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#1abc9c' }} />
+                      <span style={{ color: 'var(--text-secondary)' }}>Aprovados:</span>
+                      <strong style={{ color: 'var(--text-primary)' }}>{stats.status_counts.PROTOCOLADO || 0}</strong>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#e74c3c' }} />
                       <span style={{ color: 'var(--text-secondary)' }}>Falhas:</span>
                       <strong style={{ color: 'var(--text-primary)' }}>{stats.status_counts.ERRO_PROCESSAMENTO || 0}</strong>
@@ -1120,10 +1333,10 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
               </div>
 
               {/* Materias volume horizontal chart */}
-              <div style={{
+              <div className="metric-card" style={{
                 background: 'var(--card-bg, rgba(255, 255, 255, 0.03))',
                 border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-base)',
                 padding: '25px'
               }}>
                 <h3 className="font-cinzel" style={{ fontSize: '16px', marginBottom: '20px', letterSpacing: '1px' }}>Casos por Matéria Jurídica</h3>
@@ -1160,10 +1373,10 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
               </div>
 
               {/* Piece Types volume chart */}
-              <div style={{
+              <div className="metric-card" style={{
                 background: 'var(--card-bg, rgba(255, 255, 255, 0.03))',
                 border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-base)',
                 padding: '25px'
               }}>
                 <h3 className="font-cinzel" style={{ fontSize: '16px', marginBottom: '20px', letterSpacing: '1px' }}>Tipo de Petição (Minutas)</h3>
@@ -1213,7 +1426,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 alignItems: 'center',
                 backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 padding: '12px 20px',
-                borderRadius: '6px',
+                borderRadius: 'var(--border-radius-base)',
                 marginBottom: '15px',
                 border: '1px solid rgba(255, 255, 255, 0.1)'
               }}>
@@ -1514,6 +1727,136 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
 
         {activeTab === 3 && user && user.cargo === 'admin' && (
           <div className="section">
+            <div className="sub-section">
+              <h3 className="font-cinzel">🎨 Personalização Visual da Interface</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '-10px' }}>
+                Ajuste a aparência do sistema Praxis. Suas preferências são salvas localmente no navegador.
+              </p>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '20px',
+                marginTop: '10px'
+              }}>
+                {/* Tema de Cores */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span className="form-label">Tema de Cores</span>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                    {[
+                      { id: 'gold', name: 'Ouro Clássico', color: '#C5A880' },
+                      { id: 'emerald', name: 'Verde Advocacia', color: '#10B981' },
+                      { id: 'sapphire', name: 'Azul Imperial', color: '#3B82F6' },
+                      { id: 'burgundy', name: 'Vermelho Borgonha', color: '#E11D48' }
+                    ].map(t => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setColorTheme(t.id)}
+                        title={t.name}
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          backgroundColor: t.color,
+                          border: colorTheme === t.id ? '3px solid var(--text-primary)' : '1px solid var(--border-color)',
+                          cursor: 'pointer',
+                          boxShadow: colorTheme === t.id ? `0 0 10px ${t.color}` : 'none',
+                          transition: 'transform 0.2s ease',
+                          transform: colorTheme === t.id ? 'scale(1.1)' : 'scale(1)'
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <small style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                    Cor selecionada: <strong style={{ color: 'var(--accent-gold)' }}>
+                      {colorTheme === 'gold' && 'Ouro Clássico'}
+                      {colorTheme === 'emerald' && 'Verde Advocacia'}
+                      {colorTheme === 'sapphire' && 'Azul Imperial'}
+                      {colorTheme === 'burgundy' && 'Vermelho Borgonha'}
+                    </strong>
+                  </small>
+                </div>
+
+                {/* Tipo de Navegação */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span className="form-label">Layout de Navegação</span>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setNavLayout('top')}
+                      className={`btn ${navLayout === 'top' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, padding: '8px 12px', fontSize: '12px' }}
+                    >
+                      Top Tabs
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNavLayout('sidebar')}
+                      className={`btn ${navLayout === 'sidebar' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, padding: '8px 12px', fontSize: '12px' }}
+                    >
+                      Sidebar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Densidade Visual */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span className="form-label">Densidade Visual</span>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setDensityLayout('default')}
+                      className={`btn ${densityLayout === 'default' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, padding: '8px 12px', fontSize: '12px' }}
+                    >
+                      Padrão
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDensityLayout('compact')}
+                      className={`btn ${densityLayout === 'compact' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, padding: '8px 12px', fontSize: '12px' }}
+                    >
+                      Compacto
+                    </button>
+                  </div>
+                </div>
+
+                {/* Geometria de Cantos */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span className="form-label">Geometria dos Cantos</span>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setGeometryLayout('sharp')}
+                      className={`btn ${geometryLayout === 'sharp' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, padding: '8px 12px', fontSize: '12px' }}
+                    >
+                      Retos (0px)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGeometryLayout('default')}
+                      className={`btn ${geometryLayout === 'default' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, padding: '8px 12px', fontSize: '12px' }}
+                    >
+                      Suaves (6px)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGeometryLayout('rounded')}
+                      className={`btn ${geometryLayout === 'rounded' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, padding: '8px 12px', fontSize: '12px' }}
+                    >
+                      Redondos (16px)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <h2 className="font-cinzel">Cadastrar Nova Conta de Funcionário</h2>
 
             <div className="sub-section">
@@ -1689,7 +2032,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                               </button>
                             )}
                             <button 
-                              onClick={() => handleExcluirPasta(pasta.id)} 
+                              onClick={() => openDeletePastaConfirm(pasta)} 
                               className="btn btn-secondary"
                               style={{ margin: 0, padding: '4px 8px', fontSize: '12px', borderColor: 'var(--error)', color: 'var(--error)' }}
                             >
@@ -1796,6 +2139,26 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                   <div style={{ display: 'flex', gap: '10px', marginTop: '15px', justifyContent: 'flex-end' }}>
                     <button type="button" className="btn btn-secondary" onClick={() => setIsDeleteConfirmOpen(false)}>Cancelar</button>
                     <button type="button" className="btn btn-secondary" style={{ borderColor: 'var(--error)', color: 'var(--error)' }} onClick={handleDeleteUser}>🗑️ Confirmar Exclusão</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal de Confirmação de Exclusão de Pasta */}
+            {isDeletePastaOpen && deletingPasta && (
+              <div className="modal-overlay" onClick={() => setIsDeletePastaOpen(false)}>
+                <div className="modal-content" style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
+                  <div className="modal-header">
+                    <h3 className="modal-title font-cinzel" style={{ color: 'var(--error)' }}>⚠️ Confirmar Exclusão</h3>
+                    <button className="modal-close-btn" onClick={() => setIsDeletePastaOpen(false)}>✕</button>
+                  </div>
+                  <div style={{ padding: '15px 0', color: 'var(--text-primary)' }}>
+                    <p>Você tem certeza que deseja excluir o mapeamento da pasta: <strong style={{ wordBreak: 'break-all' }}>{deletingPasta.caminho}</strong>?</p>
+                    <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>Esta ação removerá o caminho do monitoramento do sistema.</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px', justifyContent: 'flex-end' }}>
+                    <button type="button" className="btn btn-secondary" onClick={() => setIsDeletePastaOpen(false)}>Cancelar</button>
+                    <button type="button" className="btn btn-secondary" style={{ borderColor: 'var(--error)', color: 'var(--error)' }} onClick={handleExcluirPasta}>🗑️ Confirmar Exclusão</button>
                   </div>
                 </div>
               </div>
@@ -2028,6 +2391,32 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 <button type="button" className="btn btn-secondary" onClick={() => setIsReviewModalOpen(false)}>
                   Fechar
                 </button>
+                {reviewingProcess.status === 'PROTOCOLADO' && (
+                  <>
+                    <button 
+                      type="button" 
+                      className="btn btn-primary" 
+                      onClick={() => handleDownloadPDF(reviewingProcess.id)}
+                    >
+                      📄 Baixar PDF
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-primary" 
+                      onClick={() => handleDownloadDocx(reviewingProcess.id)}
+                    >
+                      📝 Baixar Word (.docx)
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary" 
+                      style={{ borderColor: 'var(--gold)' }}
+                      onClick={() => handleRegenerateDocx(reviewingProcess.id)}
+                    >
+                      ♻️ Regerar Word (.docx)
+                    </button>
+                  </>
+                )}
                 {reviewingProcess.status !== 'PROTOCOLADO' && (
                   <>
                     <button type="button" className="btn btn-secondary" onClick={handleSaveReviewDraft}>
