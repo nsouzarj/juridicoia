@@ -32,7 +32,13 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    # Adicionamos o IP da sua VM na lista, permitindo que a interface web acesse a API
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://192.168.1.107:5173",
+        "http://localhost:8087",
+        "http://192.168.1.107:8087"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,0 +1,5 @@
+__pycache__
+venv
+.env
+revisoes_geradas
+.git

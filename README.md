@@ -84,57 +84,48 @@ flowchart TD
 
 ---
 
-## 🚀 Como Executar o Projeto Localmente
+## 🚀 Como Executar o Projeto (Produção e Desenvolvimento com Docker)
+
+O ambiente foi totalmente otimizado para rodar via Docker, garantindo que o Backend e o Frontend funcionem com imagens leves e seguras em qualquer sistema operacional ou servidor.
 
 ### 1. Pré-requisitos
-* **Python 3.10+** instalado
-* **Node.js (LTS)** instalado
-* **Docker e Docker Compose** instalados (para o banco de dados)
+* **Docker e Docker Compose** instalados.
 
-### 2. Configurando o Banco de Dados
-Na raiz do projeto, suba o container do PostgreSQL equipado com a extensão `pgvector`:
-```bash
-docker-compose up -d
+### 2. Configurando as Variáveis de Ambiente
+Na **raiz do projeto** (na mesma pasta do `docker-compose.yml`), crie um arquivo chamado `.env` e configure as seguintes variáveis:
+
+```ini
+# Chaves de API das Inteligências Artificiais
+GEMINI_API_KEY=sua-chave-aqui
+OPENROUTER_API_KEY=sua-chave-aqui
+
+# Conexão com o seu banco Postgres existente
+DB_HOST=192.168.1.107  # Coloque o IP do seu servidor de banco de dados
+DB_PORT=5432
+DB_NAME=seu_banco
+DB_USER=seu_usuario
+DB_PASS=sua_senha
+
+# Chaves de Segurança da Autenticação (JWT e Senhas)
+JWT_SECRET=coloque-uma-senha-gigante-e-secreta-aqui
+PASSWORD_PEPPER=outra-senha-gigante-aleatoria-diferente-da-primeira
 ```
 
-### 3. Executando o Backend
-1. Navegue até a pasta `backend`:
-   ```bash
-   cd backend
-   ```
-2. Crie e ative um ambiente virtual (`venv`):
-   ```bash
-   python -m venv venv
-   # No Windows:
-   .\venv\Scripts\activate
-   # No Linux/macOS:
-   source venv/bin/activate
-   ```
-3. Instale as dependências:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Configure as variáveis de ambiente no arquivo `.env` (baseado no `.env.example`).
-5. Execute a API:
-   ```bash
-   python main.py
-   ```
-   A documentação interativa estará disponível em: [http://localhost:8000/docs](http://localhost:8000/docs).
+### 3. Construindo e Executando os Containers
+Execute a sequência de comandos abaixo. A flag `--no-cache` garante que o Docker leia as dependências e chaves mais recentes:
 
-### 4. Executando o Frontend
-1. Abra um novo terminal e navegue até a pasta `frontend`:
-   ```bash
-   cd frontend
-   ```
-2. Instale os pacotes necessários:
-   ```bash
-   npm install
-   ```
-3. Inicie o servidor de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
-   Acesse a interface pelo navegador no endereço: [http://localhost:5173](http://localhost:5173).
+```bash
+sudo docker compose down
+sudo docker compose build --no-cache
+sudo docker compose up -d
+```
+
+### 4. Acessando a Plataforma
+Após os containers subirem com sucesso:
+* **Interface Web (Frontend):** Acesse `http://IP_DA_VM:5173` (ou `localhost:5173`).
+* **API e Swagger (Backend):** Acesse `http://IP_DA_VM:8087/docs` (ou `localhost:8087/docs`).
+
+> **📁 Arquivos Gerados:** Os documentos `.docx` das peças jurídicas e revisões serão salvos automaticamente e espelhados na pasta `./documentos_gerados` na raiz do seu projeto, graças ao volume compartilhado do Docker!
 
 ---
 

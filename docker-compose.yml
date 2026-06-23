@@ -1,53 +1,38 @@
 version: '3.8'
 
 services:
-  db:
-    image: pgvector/pgvector:pg15
-    container_name: juridico_db
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASS:-senha}
-      POSTGRES_DB: ${DB_NAME:-postgres}
-    ports:
-      - "5432:5432"
-    volumes:
-      - /home/pg/data:/var/lib/postgresql/data
-
-  web:
-    build: .
-    container_name: juridico_web
+  backend:
+    build: ./backend
+    container_name: praxis_backend
     restart: always
     ports:
-      - "8501:8501"
+      - "8087:8000"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - DB_HOST=db
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - PASSWORD_PEPPER=${PASSWORD_PEPPER}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      # Conecta ao PostgreSQL existente na sua máquina/VM
+      - DB_HOST=${DB_HOST:-host.docker.internal}
       - DB_NAME=${DB_NAME:-postgres}
       - DB_USER=${DB_USER:-postgres}
       - DB_PASS=${DB_PASS:-senha}
-      - DB_PORT=5432
-    depends_on:
-      - db
+      - DB_PORT=${DB_PORT:-5432}
+      # Informa ao backend para usar a pasta interna /app/docs_gerados
+      - DOCS_BASE_DIR=/app/docs_gerados
+    # Se o postgres estiver em uma rede docker customizada, configure a rede aqui
     volumes:
-      - ./revisoes_geradas:/app/revisoes_geradas
+      # MAPEAMENTO DA PASTA FÍSICA NO WINDOWS/LINUX PARA O DOCKER
+      - /home/nelson/doc_gerados:/app/docs_gerados
 
-  worker:
-    build: .
-    container_name: juridico_worker
+  frontend:
+    build: ./frontend
+    container_name: praxis_frontend
     restart: always
-    command: ["python", "robo_banco.py"]
-    environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - DB_HOST=db
-      - DB_NAME=${DB_NAME:-postgres}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASS=${DB_PASS:-senha}
-      - DB_PORT=5432
+    ports:
+      # O Nginx interno escuta na porta 80, expomos o frontend na porta 5173 (ou outra que você preferir)
+      - "5173:80"
     depends_on:
-      - db
-    volumes:
-      - ./revisoes_geradas:/app/saida_lote_banco
-
-volumes:
-  pgdata:
+      - backend

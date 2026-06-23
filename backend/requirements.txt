@@ -11,3 +11,5 @@ pydantic
 email-validator
 pytest
 respx
+markdown-pdf
+python-docx
