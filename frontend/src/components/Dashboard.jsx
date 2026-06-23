@@ -30,12 +30,14 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
     localStorage.setItem('praxis-geometry-layout', geometryLayout);
   }, [geometryLayout]);
   const [processos, setProcessos] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchProcessoQuery, setSearchProcessoQuery] = useState('');
   const [jurisprudencias, setJurisprudencias] = useState([]);
   
   // Form states
   const [procIdToProcess, setProcIdToProcess] = useState('');
   const [cadastroJur, setCadastroJur] = useState({ ementa: '', tribunal: '', processo: '', materia: '' });
-  const [cadastroUser, setCadastroUser] = useState({ nome: '', email: '', senha: '', cargo: 'advogado' });
+  const [cadastroUser, setCadastroUser] = useState({ nome: '', email: '', senha: '', cargo: 'advogado', oab: '' });
   
   // Pastas e seleção em lote
   const [pastas, setPastas] = useState([]);
@@ -49,11 +51,34 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const [deletingPrecedent, setDeletingPrecedent] = useState(null);
   const [usuarios, setUsuarios] = useState([]);
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState({ id: '', nome: '', email: '', senha: '', cargo: 'advogado' });
+  const [editingUser, setEditingUser] = useState({ id: '', nome: '', email: '', senha: '', cargo: 'advogado', oab: '' });
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState(null);
   const [isDeletePastaOpen, setIsDeletePastaOpen] = useState(false);
   const [deletingPasta, setDeletingPasta] = useState(null);
+  const [selectedRevisorId, setSelectedRevisorId] = useState('');
+  
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: null,
+    confirmText: 'Confirmar'
+  });
+
+  const confirmAction = (title, message, onConfirmCallback, confirmText = 'Confirmar') => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        onConfirmCallback();
+      },
+      confirmText
+    });
+  };
+
   const [stats, setStats] = useState({
     total_processos: 0,
     status_counts: {},
@@ -197,6 +222,9 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       await fetchProcessos();
       await fetchStats();
       await fetchMaterias();
+      if (user && user.cargo === 'admin') {
+        await fetchUsuarios();
+      }
     };
     fetchOnLoad();
     
@@ -205,7 +233,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       await fetchStats();
     }, 5000);
     return () => clearInterval(interval);
-  }, [fetchProcessos, fetchStats, fetchMaterias]);
+  }, [fetchProcessos, fetchStats, fetchMaterias, fetchUsuarios, user]);
 
   // Fetch precedents and materias when RAG tab (2) is selected
   useEffect(() => {
@@ -356,28 +384,30 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       setUserMsg({ type: 'error', text: 'Preencha todos os campos obrigatórios.' });
       return;
     }
-    setUserMsg(null);
-
-    try {
-      const res = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(cadastroUser)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setUserMsg({ type: 'success', text: `Conta criada com sucesso para ${nome}!` });
-        setCadastroUser({ nome: '', email: '', senha: '', cargo: 'advogado' });
-        fetchUsuarios();
-      } else {
-        setUserMsg({ type: 'error', text: data.detail || 'Erro ao registrar usuário.' });
+    
+    confirmAction('Confirmar Cadastro', `Deseja realmente cadastrar o novo operador: ${nome}?`, async () => {
+      setUserMsg(null);
+      try {
+        const res = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(cadastroUser)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setUserMsg({ type: 'success', text: `Conta criada com sucesso para ${nome}!` });
+          setCadastroUser({ nome: '', email: '', senha: '', cargo: 'advogado', oab: '' });
+          fetchUsuarios();
+        } else {
+          setUserMsg({ type: 'error', text: data.detail || 'Erro ao registrar usuário.' });
+        }
+      } catch (err) {
+        setUserMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
       }
-    } catch (err) {
-      setUserMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    }
+    });
   };
 
   const openEditModal = (userToEdit) => {
@@ -387,40 +417,43 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       nome: userToEdit.nome,
       email: userToEdit.email,
       senha: '',
-      cargo: userToEdit.cargo
+      cargo: userToEdit.cargo,
+      oab: userToEdit.oab || ''
     });
     setIsEditUserModalOpen(true);
   };
 
   const handleEditUser = async (e) => {
     e.preventDefault();
-    const { id, nome, email, senha, cargo } = editingUser;
+    const { id, nome, email, senha, cargo, oab } = editingUser;
     if (!nome || !email || !cargo) {
       setUserMsg({ type: 'error', text: 'Preencha todos os campos obrigatórios.' });
       return;
     }
-    setUserMsg(null);
-
-    try {
-      const res = await fetch(`${API_URL}/admin/usuarios/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ nome, email, senha: senha || null, cargo })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setUserMsg({ type: 'success', text: `Usuário ${nome} atualizado com sucesso!` });
-        setIsEditUserModalOpen(false);
-        fetchUsuarios();
-      } else {
-        setUserMsg({ type: 'error', text: data.detail || 'Erro ao editar usuário.' });
+    
+    confirmAction('Confirmar Edição', `Deseja realmente salvar as alterações para o operador: ${nome}?`, async () => {
+      setUserMsg(null);
+      try {
+        const res = await fetch(`${API_URL}/admin/usuarios/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ nome, email, senha: senha || null, cargo, oab })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setUserMsg({ type: 'success', text: `Usuário ${nome} atualizado com sucesso!` });
+          setIsEditUserModalOpen(false);
+          fetchUsuarios();
+        } else {
+          setUserMsg({ type: 'error', text: data.detail || 'Erro ao editar usuário.' });
+        }
+      } catch (err) {
+        setUserMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
       }
-    } catch (err) {
-      setUserMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    }
+    });
   };
 
   const openDeleteConfirm = (userToDelete) => {
@@ -533,7 +566,24 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
     );
   };
 
-  const checkableProcessos = processos.filter(
+  const itemsPerPage = 10;
+
+  const filteredProcessos = processos.filter(p => {
+    if (!searchProcessoQuery) return true;
+    const q = searchProcessoQuery.toLowerCase();
+    return (
+      (p.numero_processo || '').toLowerCase().includes(q) ||
+      (p.cliente || '').toLowerCase().includes(q) ||
+      (p.status || '').toLowerCase().includes(q) ||
+      (p.contexto_dinamico?.materia || '').toLowerCase().includes(q) ||
+      (p.contexto_dinamico?.tipo_peca || '').toLowerCase().includes(q)
+    );
+  });
+
+  const totalPages = Math.ceil(filteredProcessos.length / itemsPerPage);
+  const paginatedProcessos = filteredProcessos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const checkableProcessos = paginatedProcessos.filter(
     p => p.status === 'PENDENTE' || p.status === 'ERRO_PROCESSAMENTO'
   );
   
@@ -564,7 +614,7 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ ids: selectedProcessIds })
+        body: JSON.stringify({ ids: selectedProcessIds, revisor_id: selectedRevisorId ? parseInt(selectedRevisorId) : null })
       });
       const data = await res.json();
       if (res.ok) {
@@ -883,8 +933,9 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const handleUploadProcessos = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setCsvProcMsg(null);
-    setProcessingMessage('Importando processos do arquivo CSV...');
+    confirmAction('Carregar Arquivo', `Deseja carregar a planilha de processos "${file.name}"?`, () => {
+      setCsvProcMsg(null);
+      setProcessingMessage('Importando processos do arquivo CSV...');
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -937,15 +988,17 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       } finally {
         setProcessingMessage(null);
       }
-    };
-    reader.readAsText(file, 'UTF-8');
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
   };
 
   const handleUploadJurisprudencias = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setCsvJurMsg(null);
-    setProcessingMessage('Vetorizando jurisprudências em lote RAG... (Isso pode demorar um pouco)');
+    confirmAction('Carregar Arquivo', `Deseja carregar a planilha de ementas "${file.name}"?`, () => {
+      setCsvJurMsg(null);
+      setProcessingMessage('Vetorizando jurisprudências em lote RAG... (Isso pode demorar um pouco)');
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -989,8 +1042,9 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       } finally {
         setProcessingMessage(null);
       }
-    };
-    reader.readAsText(file, 'UTF-8');
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
   };
 
   const getStatusBadge = (status) => {
@@ -1418,7 +1472,20 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
 
         {activeTab === 1 && (
           <div className="section">
-            <h2 className="font-cinzel">Fila de Casos (Urgência por Prazo)</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h2 className="font-cinzel" style={{ margin: 0 }}>Fila de Casos (Urgência por Prazo)</h2>
+              <input
+                type="text"
+                placeholder="Buscar por cliente, processo, status..."
+                value={searchProcessoQuery}
+                onChange={(e) => {
+                  setSearchProcessoQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="form-input"
+                style={{ width: '300px', margin: 0 }}
+              />
+            </div>
 
             {selectedProcessIds.length > 0 && (
               <div style={{
@@ -1434,13 +1501,28 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
                   <strong>{selectedProcessIds.length}</strong> {selectedProcessIds.length === 1 ? 'processo selecionado' : 'processos selecionados'}
                 </span>
-                <button 
-                  onClick={handleBatchProcess} 
-                  className="btn btn-primary"
-                  style={{ margin: 0, padding: '8px 16px', fontSize: '13px' }}
-                >
-                  🚀 Processar Lote Selecionado
-                </button>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  {user?.cargo === 'admin' && (
+                    <select 
+                      className="form-input" 
+                      style={{ margin: 0, padding: '6px', fontSize: '13px', width: '200px' }}
+                      value={selectedRevisorId}
+                      onChange={(e) => setSelectedRevisorId(e.target.value)}
+                    >
+                      <option value="">Atribuir Revisor (Opcional)</option>
+                      {usuarios.filter(u => u.cargo === 'revisor' || u.cargo === 'advogado').map(u => (
+                        <option key={u.id} value={u.id}>{u.nome} ({u.cargo})</option>
+                      ))}
+                    </select>
+                  )}
+                  <button 
+                    onClick={handleBatchProcess} 
+                    className="btn btn-primary"
+                    style={{ margin: 0, padding: '8px 16px', fontSize: '13px' }}
+                  >
+                    🚀 Processar Lote Selecionado
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1464,11 +1546,12 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                       <th>Prazo Limite</th>
                       <th>Matéria</th>
                       <th>Tipo de Peça</th>
+                      <th>Revisor</th>
                       <th style={{ width: '120px' }}>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {processos.map((p) => {
+                    {paginatedProcessos.map((p) => {
                       const canSelect = p.status === 'PENDENTE' || p.status === 'ERRO_PROCESSAMENTO';
                       return (
                         <tr key={p.id}>
@@ -1485,9 +1568,10 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                           <td>{p.numero_processo}</td>
                           <td>{p.cliente}</td>
                           <td>{getStatusBadge(p.status)}</td>
-                          <td>{p.data_prazo || 'Sem Prazo'}</td>
+                          <td>{p.data_prazo ? (p.data_prazo.includes('-') ? p.data_prazo.split('T')[0].split('-').reverse().join('/') : p.data_prazo) : 'Sem Prazo'}</td>
                           <td>{p.contexto_dinamico?.materia || 'Geral'}</td>
                           <td>{p.contexto_dinamico?.tipo_peca || 'Contestação'}</td>
+                          <td>{p.revisor_nome ? `${p.revisor_nome} (OAB: ${p.revisor_oab || 'N/I'})` : '-'}</td>
                           <td>
                             {p.status === 'REVISAO' || p.status === 'PROTOCOLADO' ? (
                               <button
@@ -1509,6 +1593,31 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
               ) : (
                 <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                   Nenhum processo pendente na fila.
+                </div>
+              )}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginTop: '15px' }}>
+                  <button 
+                    className="btn btn-secondary" 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => prev - 1)}
+                    style={{ margin: 0, padding: '5px 10px', fontSize: '12px' }}
+                  >
+                    Anterior
+                  </button>
+                  <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <button 
+                    className="btn btn-secondary" 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                    style={{ margin: 0, padding: '5px 10px', fontSize: '12px' }}
+                  >
+                    Próxima
+                  </button>
                 </div>
               )}
             </div>
@@ -1942,6 +2051,19 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                       <option value="admin">Administrador</option>
                     </select>
                   </div>
+                  {(cadastroUser.cargo === 'advogado' || cadastroUser.cargo === 'revisor') && (
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="oab-nov">Número OAB</label>
+                      <input
+                        id="oab-nov"
+                        type="text"
+                        placeholder="Ex: 123456/SP"
+                        className="form-input"
+                        value={cadastroUser.oab}
+                        onChange={(e) => setCadastroUser({ ...cadastroUser, oab: e.target.value })}
+                      />
+                    </div>
+                  )}
                 </div>
                 <button type="submit" className="btn btn-primary" style={{ width: 'fit-content' }}>👥 Cadastrar Operador</button>
               </form>
@@ -2149,7 +2271,21 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                           </small>
                         )}
                       </div>
+                      {(editingUser.cargo === 'advogado' || editingUser.cargo === 'revisor') && (
+                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                          <label className="form-label" htmlFor="edit-oab">Número OAB</label>
+                          <input
+                            id="edit-oab"
+                            type="text"
+                            className="form-input"
+                            placeholder="Ex: 123456/SP"
+                            value={editingUser.oab || ''}
+                            onChange={(e) => setEditingUser({ ...editingUser, oab: e.target.value })}
+                          />
+                        </div>
+                      )}
                     </div>
+                    {userMsg && <div className={`alert alert-${userMsg.type}`} style={{ marginTop: '15px' }}>{userMsg.text}</div>}
                     <div style={{ display: 'flex', gap: '10px', marginTop: '10px', justifyContent: 'flex-end' }}>
                       <button type="button" className="btn btn-secondary" onClick={() => setIsEditUserModalOpen(false)}>Cancelar</button>
                       <button type="submit" className="btn btn-primary">💾 Salvar Alterações</button>
@@ -2470,6 +2606,36 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
           </div>
         )}
       </main>
+
+      {/* Modal Genérico de Confirmação */}
+      {confirmDialog.isOpen && (
+        <div className="modal-overlay" onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}>
+          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header" style={{ justifyContent: 'center', borderBottom: 'none' }}>
+              <h3 className="modal-title font-cinzel" style={{ color: 'var(--text-primary)' }}>{confirmDialog.title}</h3>
+            </div>
+            <div style={{ padding: '20px 0', color: 'var(--text-secondary)' }}>
+              <p>{confirmDialog.message}</p>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                onClick={confirmDialog.onConfirm}
+              >
+                {confirmDialog.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {processingMessage && (
         <div className="processing-overlay">

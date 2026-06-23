@@ -305,10 +305,10 @@ graph LR
         end
 
         subgraph Fila de Peças
-            UC3(Listar processos)
+            UC3(Listar processos atribuídos)
             UC4(Cadastrar processo)
             UC5(Processar caso individualmente)
-            UC6(Processar em lote)
+            UC6(Processar em lote e atribuir Revisor)
             UC7(Importar processos via CSV)
         end
 
@@ -430,6 +430,7 @@ classDiagram
         +str status
         +jsonb contexto_dinamico
         +date data_prazo
+        +int revisor_id FK
         +timestamp data_criacao
         +timestamp data_atualizacao
     }
@@ -449,6 +450,7 @@ classDiagram
         +str email UNIQUE
         +str senha_hash
         +str cargo
+        +str oab
         +timestamp data_criacao
         +timestamp data_atualizacao
     }

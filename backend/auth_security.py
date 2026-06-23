@@ -118,6 +118,8 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     email: str = payload.get("sub")
     cargo: str = payload.get("cargo")
     nome: str = payload.get("nome")
+    user_id: int = payload.get("id")
+    oab: str = payload.get("oab")
     
     if email is None:
         raise HTTPException(
@@ -127,9 +129,11 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         )
         
     return {
+        "id": user_id,
         "email": email,
         "cargo": cargo,
-        "nome": nome
+        "nome": nome,
+        "oab": oab
     }
 
 def get_current_active_admin(current_user: dict = Depends(get_current_user)) -> dict:

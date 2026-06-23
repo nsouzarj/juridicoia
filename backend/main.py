@@ -68,12 +68,14 @@ class UserRegister(BaseModel):
     email: EmailStr
     senha: str = Field(..., min_length=6, max_length=100)
     cargo: str = Field("advogado", pattern="^(admin|advogado|revisor)$")
+    oab: Optional[str] = None
 
 class UserUpdate(BaseModel):
     nome: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     senha: Optional[str] = Field(None, min_length=6, max_length=100)
     cargo: str = Field("advogado", pattern="^(admin|advogado|revisor)$")
+    oab: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -121,6 +123,7 @@ class PastaInsert(BaseModel):
 
 class LoteProcessar(BaseModel):
     ids: List[int]
+    revisor_id: Optional[int] = None
 
 # Rotas de Autenticação
 @app.post("/auth/register", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -146,10 +149,17 @@ def register_user(user_data: UserRegister, current_admin: dict = Depends(get_cur
                     detail="Este e-mail já está cadastrado."
                 )
             
+            # Validação do OAB
+            if user_data.cargo in ['advogado', 'revisor'] and not user_data.oab:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="A OAB é obrigatória para o cargo de advogado ou revisor."
+                )
+
             senha_hash = get_password_hash(user_data.senha)
             cursor.execute(
-                "INSERT INTO usuarios (nome, email, senha_hash, cargo) VALUES (%s, %s, %s, %s);",
-                (user_data.nome, user_data.email, senha_hash, user_data.cargo)
+                "INSERT INTO usuarios (nome, email, senha_hash, cargo, oab) VALUES (%s, %s, %s, %s, %s);",
+                (user_data.nome, user_data.email, senha_hash, user_data.cargo, user_data.oab)
             )
             conn.commit()
             return {"message": "Usuário criado com sucesso!"}
@@ -178,7 +188,7 @@ def login_user(credentials: UserLogin):
     
     try:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT nome, senha_hash, cargo FROM usuarios WHERE email = %s;", (credentials.email,))
+            cursor.execute("SELECT id, nome, senha_hash, cargo, oab FROM usuarios WHERE email = %s;", (credentials.email,))
             user = cursor.fetchone()
             if not user:
                 raise HTTPException(
@@ -187,7 +197,7 @@ def login_user(credentials: UserLogin):
                     headers={"WWW-Authenticate": "Bearer"},
                 )
             
-            nome, senha_hash, cargo = user
+            user_id, nome, senha_hash, cargo, oab = user
             is_valid, needs_upgrade = verify_password_with_status(credentials.senha, senha_hash)
             if not is_valid:
                 raise HTTPException(
@@ -208,7 +218,7 @@ def login_user(credentials: UserLogin):
             
             # Assina token JWT
             access_token = create_access_token(
-                data={"sub": credentials.email, "cargo": cargo, "nome": nome}
+                data={"sub": credentials.email, "id": user_id, "cargo": cargo, "nome": nome, "oab": oab}
             )
             return {"access_token": access_token, "token_type": "bearer"}
     except HTTPException:
@@ -229,8 +239,13 @@ def get_me(current_user: dict = Depends(get_current_user)):
 # Rotas do Negócio (Processos Jurídicos)
 @app.get("/processos", response_model=List[dict])
 def list_processos(current_user: dict = Depends(get_current_user)):
-    """Retorna a lista de todos os processos cadastrados, priorizados por prazo."""
-    processos = db.buscar_todos_processos()
+    """Retorna a lista de processos cadastrados. Filtra pelo revisor se não for admin."""
+    if current_user["cargo"] == "admin":
+        processos = db.buscar_todos_processos()
+    else:
+        # Advogados e Revisores vêem apenas seus próprios processos
+        processos = db.buscar_todos_processos(revisor_id=current_user["id"])
+        
     result = []
     for p in processos:
         result.append({
@@ -240,7 +255,9 @@ def list_processos(current_user: dict = Depends(get_current_user)):
             "status": p["status"],
             "contexto_dinamico": p["contexto_dinamico"],
             "data_prazo": str(p["data_prazo"]) if p["data_prazo"] else None,
-            "data_criacao": p["data_criacao"].isoformat()
+            "data_criacao": p["data_criacao"].isoformat(),
+            "revisor_nome": p.get("revisor_nome"),
+            "revisor_oab": p.get("revisor_oab")
         })
     return result
 
@@ -406,7 +423,7 @@ def processar_lote(
                     detalhes.append({"id": p_id, "status": "ignorado", "motivo": f"Status atual é {status_atual}"})
                     continue
                 
-                db.atualizar_status(p_id, 'PROCESSANDO')
+                db.atualizar_status(p_id, 'PROCESSANDO', revisor_id=lote.revisor_id)
                 
                 dados = {
                     "nome_cliente": cliente,
@@ -607,11 +624,15 @@ def aprovar_peca(
         
         caminho_arquivo = os.path.join(pasta_cliente, nome_arquivo)
         
+        # Assinatura do Revisor
+        assinatura = f"\n\n---\nRevisado por: {current_user.get('nome', '')} - OAB: {current_user.get('oab', 'Não informada')}"
+        pedidos_com_assinatura = payload.pedidos_revisados + assinatura
+        
         # Preencher o template usando o texto revisado final
         fill_template(
             data=dados_docx,
             fundamentacao=payload.fundamentacao_revisada,
-            pedidos=payload.pedidos_revisados,
+            pedidos=pedidos_com_assinatura,
             output_path=caminho_arquivo
         )
         
@@ -680,7 +701,12 @@ def download_processo_pdf(
             fundamentacao_limpa = fundamentacao.replace("> [!IMPORTANT]", "").replace("> [!WARNING]", "").replace("> [!NOTE]", "")
             pedidos_limpos = pedidos.replace("> [!IMPORTANT]", "").replace("> [!WARNING]", "").replace("> [!NOTE]", "")
             
-            md_content = f"""# EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA COMARCA DE {juizo.upper()}
+            assinatura = f"\n\n---\n**Revisado por:** {current_user.get('nome', '')} - OAB: {current_user.get('oab', 'Não informada')}"
+
+            # O uso de tags HTML inline permite justificar o texto no PDF final
+            md_content = f"""<div style="text-align: justify;">
+
+# EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) DE DIREITO DA COMARCA DE {juizo.upper()}
 
 **Processo nº:** {num_processo}  
 **Requerente/Requerido:** {cliente.upper()}  
@@ -695,6 +721,9 @@ def download_processo_pdf(
 
 ### III. DOS PEDIDOS
 {pedidos_limpos}
+{assinatura}
+
+</div>
 """
             
             # Gera o PDF usando MarkdownPdf
@@ -974,6 +1003,7 @@ def list_usuarios(current_admin: dict = Depends(get_current_active_admin)):
             "nome": u["nome"],
             "email": u["email"],
             "cargo": u["cargo"],
+            "oab": u.get("oab"),
             "data_criacao": u["data_criacao"].isoformat()
         })
     return result
@@ -1014,10 +1044,17 @@ def update_usuario(user_id: int, user_data: UserUpdate, current_admin: dict = De
     finally:
         conn.close()
 
+    # Validação do OAB
+    if user_data.cargo in ['advogado', 'revisor'] and not user_data.oab:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A OAB é obrigatória para o cargo de advogado ou revisor."
+        )
+
     # Prepara senha_hash se fornecido
     senha_hash = get_password_hash(user_data.senha) if user_data.senha else None
     
-    sucesso = db.atualizar_usuario(user_id, user_data.nome, user_data.email, user_data.cargo, senha_hash)
+    sucesso = db.atualizar_usuario(user_id, user_data.nome, user_data.email, user_data.cargo, senha_hash, user_data.oab)
     if not sucesso:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -98,6 +98,10 @@ def inicializar_banco():
         ativo BOOLEAN DEFAULT FALSE,
         data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- Atualizações de esquema para suporte a OAB e Revisor
+    ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS oab VARCHAR(50);
+    ALTER TABLE processos_lote ADD COLUMN IF NOT EXISTS revisor_id INT REFERENCES usuarios(id);
     """
     try:
         with conn.cursor() as cursor:
@@ -194,15 +198,22 @@ def buscar_processos_pendentes():
     finally:
         conn.close()
 
-def buscar_todos_processos():
-    """Busca todos os processos cadastrados, ordenando por prazo e status."""
+def buscar_todos_processos(revisor_id=None):
+    """Busca processos cadastrados, ordenando por prazo e status. Se revisor_id for passado, filtra por ele."""
     conn = get_connection()
     if not conn:
         return []
-    query = "SELECT * FROM processos_lote ORDER BY data_prazo ASC NULLS LAST, id DESC;"
+        
+    if revisor_id is not None:
+        query = "SELECT p.*, u.nome as revisor_nome, u.oab as revisor_oab FROM processos_lote p LEFT JOIN usuarios u ON p.revisor_id = u.id WHERE p.revisor_id = %s ORDER BY p.data_prazo ASC NULLS LAST, p.id DESC;"
+        params = (revisor_id,)
+    else:
+        query = "SELECT p.*, u.nome as revisor_nome, u.oab as revisor_oab FROM processos_lote p LEFT JOIN usuarios u ON p.revisor_id = u.id ORDER BY p.data_prazo ASC NULLS LAST, p.id DESC;"
+        params = ()
+        
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(query)
+            cursor.execute(query, params)
             processos = cursor.fetchall()
             return processos
     except Exception as e:
@@ -211,20 +222,28 @@ def buscar_todos_processos():
     finally:
         conn.close()
 
-def atualizar_status(processo_id, novo_status):
-    """Atualiza o status do processo (Ex: Mudando de PENDENTE para REVISAO)."""
+def atualizar_status(processo_id, novo_status, revisor_id=None):
+    """Atualiza o status do processo (Ex: Mudando de PENDENTE para REVISAO) e opcionalmente atribui um revisor."""
     conn = get_connection()
     if not conn:
         return False
         
-    query = """
-    UPDATE processos_lote 
-    SET status = %s, data_atualizacao = CURRENT_TIMESTAMP
-    WHERE id = %s;
-    """
     try:
         with conn.cursor() as cursor:
-            cursor.execute(query, (novo_status, processo_id))
+            if revisor_id is not None:
+                query = """
+                UPDATE processos_lote 
+                SET status = %s, revisor_id = %s, data_atualizacao = CURRENT_TIMESTAMP
+                WHERE id = %s;
+                """
+                cursor.execute(query, (novo_status, revisor_id, processo_id))
+            else:
+                query = """
+                UPDATE processos_lote 
+                SET status = %s, data_atualizacao = CURRENT_TIMESTAMP
+                WHERE id = %s;
+                """
+                cursor.execute(query, (novo_status, processo_id))
             conn.commit()
             return True
     except Exception as e:
@@ -396,7 +415,7 @@ def buscar_usuarios():
     conn = get_connection()
     if not conn:
         return []
-    query = "SELECT id, nome, email, cargo, data_criacao FROM usuarios ORDER BY nome ASC;"
+    query = "SELECT id, nome, email, cargo, oab, data_criacao FROM usuarios ORDER BY nome ASC;"
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(query)
@@ -407,7 +426,7 @@ def buscar_usuarios():
     finally:
         conn.close()
 
-def atualizar_usuario(user_id, nome, email, cargo, senha_hash=None):
+def atualizar_usuario(user_id, nome, email, cargo, senha_hash=None, oab=None):
     """Atualiza as informações de um usuário. Se senha_hash for informado, atualiza a senha também."""
     conn = get_connection()
     if not conn:
@@ -417,17 +436,17 @@ def atualizar_usuario(user_id, nome, email, cargo, senha_hash=None):
             if senha_hash:
                 query = """
                     UPDATE usuarios 
-                    SET nome = %s, email = %s, cargo = %s, senha_hash = %s, data_atualizacao = CURRENT_TIMESTAMP 
+                    SET nome = %s, email = %s, cargo = %s, senha_hash = %s, oab = %s, data_atualizacao = CURRENT_TIMESTAMP 
                     WHERE id = %s
                 """
-                cursor.execute(query, (nome, email, cargo, senha_hash, user_id))
+                cursor.execute(query, (nome, email, cargo, senha_hash, oab, user_id))
             else:
                 query = """
                     UPDATE usuarios 
-                    SET nome = %s, email = %s, cargo = %s, data_atualizacao = CURRENT_TIMESTAMP 
+                    SET nome = %s, email = %s, cargo = %s, oab = %s, data_atualizacao = CURRENT_TIMESTAMP 
                     WHERE id = %s
                 """
-                cursor.execute(query, (nome, email, cargo, user_id))
+                cursor.execute(query, (nome, email, cargo, oab, user_id))
             conn.commit()
             return cursor.rowcount > 0
     except Exception as e:
