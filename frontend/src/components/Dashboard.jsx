@@ -290,41 +290,48 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       setJurMsg({ type: 'error', text: 'Preencha todos os campos obrigatórios.' });
       return;
     }
-    setJurMsg(null);
 
-    const url = editingPrecedent 
-      ? `${API_URL}/jurisprudencia/${editingPrecedent.id}` 
-      : `${API_URL}/jurisprudencia`;
-    const method = editingPrecedent ? 'PUT' : 'POST';
-    setProcessingMessage(editingPrecedent ? 'Atualizando precedente e recalculando embeddings...' : 'Vetorizando precedente na base de dados...');
+    const title = editingPrecedent ? 'Editar Precedente' : 'Cadastrar Precedente';
+    const message = editingPrecedent 
+      ? 'Deseja salvar as alterações neste precedente? Ele será re-vetorizado no RAG.'
+      : 'Deseja cadastrar este novo precedente na base de dados do RAG?';
 
-    try {
-      const res = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(cadastroJur)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setJurMsg({ 
-          type: 'success', 
-          text: editingPrecedent ? 'Precedente atualizado com sucesso!' : 'Precedente cadastrado com sucesso!' 
+    confirmAction(title, message, async () => {
+      setJurMsg(null);
+      const url = editingPrecedent 
+        ? `${API_URL}/jurisprudencia/${editingPrecedent.id}` 
+        : `${API_URL}/jurisprudencia`;
+      const method = editingPrecedent ? 'PUT' : 'POST';
+      setProcessingMessage(editingPrecedent ? 'Atualizando precedente e recalculando embeddings...' : 'Vetorizando precedente na base de dados...');
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(cadastroJur)
         });
-        setCadastroJur({ ementa: '', tribunal: '', processo: '', materia: '' });
-        setEditingPrecedent(null);
-        setIsPrecedentModalOpen(false);
-        fetchJurisprudencias();
-      } else {
-        setJurMsg({ type: 'error', text: data.detail || 'Erro ao salvar precedente.' });
+        const data = await res.json();
+        if (res.ok) {
+          setJurMsg({ 
+            type: 'success', 
+            text: editingPrecedent ? 'Precedente atualizado com sucesso!' : 'Precedente cadastrado com sucesso!' 
+          });
+          setCadastroJur({ ementa: '', tribunal: '', processo: '', materia: '' });
+          setEditingPrecedent(null);
+          setIsPrecedentModalOpen(false);
+          fetchJurisprudencias();
+        } else {
+          setJurMsg({ type: 'error', text: data.detail || 'Erro ao salvar precedente.' });
+        }
+      } catch (err) {
+        setJurMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+      } finally {
+        setProcessingMessage(null);
       }
-    } catch (err) {
-      setJurMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    } finally {
-      setProcessingMessage(null);
-    }
+    });
   };
 
   const openCreatePrecedentModal = () => {
@@ -347,34 +354,32 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   };
 
   const openDeletePrecedentConfirm = (precedent) => {
-    setJurMsg(null);
-    setDeletingPrecedent(precedent);
-    setIsDeletePrecedentOpen(true);
-  };
-
-  const handleDeletePrecedent = async () => {
-    if (!deletingPrecedent) return;
-    setJurMsg(null);
-    setProcessingMessage('Removendo precedente da base de dados...');
-    try {
-      const res = await fetch(`${API_URL}/jurisprudencia/${deletingPrecedent.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setJurMsg({ type: 'success', text: 'Precedente excluído com sucesso!' });
-        setIsDeletePrecedentOpen(false);
-        setDeletingPrecedent(null);
-        fetchJurisprudencias();
-      } else {
-        setJurMsg({ type: 'error', text: data.detail || 'Erro ao excluir precedente.' });
-      }
-    } catch (err) {
-      setJurMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    } finally {
-      setProcessingMessage(null);
-    }
+    confirmAction(
+      'Confirmar Exclusão',
+      `Você tem certeza que deseja excluir o precedente com a ementa iniciada em: "${precedent.ementa.substring(0, 50)}..."? Esta ação é irreversível e removerá permanentemente o vetor de busca do RAG.`,
+      async () => {
+        setJurMsg(null);
+        setProcessingMessage('Removendo precedente da base de dados...');
+        try {
+          const res = await fetch(`${API_URL}/jurisprudencia/${precedent.id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setJurMsg({ type: 'success', text: 'Precedente excluído com sucesso!' });
+            fetchJurisprudencias();
+          } else {
+            setJurMsg({ type: 'error', text: data.detail || 'Erro ao excluir precedente.' });
+          }
+        } catch (err) {
+          setJurMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+        } finally {
+          setProcessingMessage(null);
+        }
+      },
+      'Excluir Precedente'
+    );
   };
 
   const handleCadastroUser = async (e) => {
@@ -457,31 +462,29 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   };
 
   const openDeleteConfirm = (userToDelete) => {
-    setUserMsg(null);
-    setDeletingUser(userToDelete);
-    setIsDeleteConfirmOpen(true);
-  };
-
-  const handleDeleteUser = async () => {
-    if (!deletingUser) return;
-    setUserMsg(null);
-    try {
-      const res = await fetch(`${API_URL}/admin/usuarios/${deletingUser.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setUserMsg({ type: 'success', text: `Usuário ${deletingUser.nome} excluído com sucesso!` });
-        setIsDeleteConfirmOpen(false);
-        setDeletingUser(null);
-        fetchUsuarios();
-      } else {
-        setUserMsg({ type: 'error', text: data.detail || 'Erro ao excluir usuário.' });
-      }
-    } catch (err) {
-      setUserMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    }
+    confirmAction(
+      'Confirmar Exclusão',
+      `Você tem certeza que deseja excluir o operador: ${userToDelete.nome}? Esta ação é irreversível.`,
+      async () => {
+        setUserMsg(null);
+        try {
+          const res = await fetch(`${API_URL}/admin/usuarios/${userToDelete.id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setUserMsg({ type: 'success', text: `Usuário ${userToDelete.nome} excluído com sucesso!` });
+            fetchUsuarios();
+          } else {
+            setUserMsg({ type: 'error', text: data.detail || 'Erro ao excluir usuário.' });
+          }
+        } catch (err) {
+          setUserMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+        }
+      },
+      'Excluir'
+    );
   };
 
   const handleCadastroPasta = async (e) => {
@@ -490,74 +493,76 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       setPastaMsg({ type: 'error', text: 'Preencha o caminho da pasta.' });
       return;
     }
-    setPastaMsg(null);
-    try {
-      const res = await fetch(`${API_URL}/admin/pastas`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ caminho: newPastaCaminho })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPastaMsg({ type: 'success', text: 'Pasta cadastrada com sucesso!' });
-        setNewPastaCaminho('');
-        fetchPastas();
-      } else {
-        setPastaMsg({ type: 'error', text: data.detail || 'Erro ao cadastrar pasta.' });
+    confirmAction('Cadastrar Pasta', `Deseja cadastrar a pasta de saída: "${newPastaCaminho}"?`, async () => {
+      setPastaMsg(null);
+      try {
+        const res = await fetch(`${API_URL}/admin/pastas`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ caminho: newPastaCaminho })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setPastaMsg({ type: 'success', text: 'Pasta cadastrada com sucesso!' });
+          setNewPastaCaminho('');
+          fetchPastas();
+        } else {
+          setPastaMsg({ type: 'error', text: data.detail || 'Erro ao cadastrar pasta.' });
+        }
+      } catch (err) {
+        setPastaMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
       }
-    } catch (err) {
-      setPastaMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    }
+    });
   };
 
   const handleAtivarPasta = async (pastaId) => {
-    setPastaMsg(null);
-    try {
-      const res = await fetch(`${API_URL}/admin/pastas/${pastaId}/ativar`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPastaMsg({ type: 'success', text: 'Pasta ativada com sucesso!' });
-        fetchPastas();
-      } else {
-        setPastaMsg({ type: 'error', text: data.detail || 'Erro ao ativar pasta.' });
+    confirmAction('Ativar Pasta', 'Deseja definir esta pasta como a pasta ativa de saída do sistema?', async () => {
+      setPastaMsg(null);
+      try {
+        const res = await fetch(`${API_URL}/admin/pastas/${pastaId}/ativar`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setPastaMsg({ type: 'success', text: 'Pasta ativada com sucesso!' });
+          fetchPastas();
+        } else {
+          setPastaMsg({ type: 'error', text: data.detail || 'Erro ao ativar pasta.' });
+        }
+      } catch (err) {
+        setPastaMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
       }
-    } catch (err) {
-      setPastaMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    }
+    });
   };
 
   const openDeletePastaConfirm = (pasta) => {
-    setPastaMsg(null);
-    setDeletingPasta(pasta);
-    setIsDeletePastaOpen(true);
-  };
-
-  const handleExcluirPasta = async () => {
-    if (!deletingPasta) return;
-    setPastaMsg(null);
-    try {
-      const res = await fetch(`${API_URL}/admin/pastas/${deletingPasta.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPastaMsg({ type: 'success', text: 'Pasta removida com sucesso!' });
-        setIsDeletePastaOpen(false);
-        setDeletingPasta(null);
-        fetchPastas();
-      } else {
-        setPastaMsg({ type: 'error', text: data.detail || 'Erro ao excluir pasta.' });
-      }
-    } catch (err) {
-      setPastaMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    }
+    confirmAction(
+      'Confirmar Exclusão',
+      `Tem certeza que deseja excluir a pasta de saída "${pasta.caminho}"?`,
+      async () => {
+        setPastaMsg(null);
+        try {
+          const res = await fetch(`${API_URL}/admin/pastas/${pasta.id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            setPastaMsg({ type: 'success', text: 'Pasta removida com sucesso!' });
+            fetchPastas();
+          } else {
+            setPastaMsg({ type: 'error', text: data.detail || 'Erro ao excluir pasta.' });
+          }
+        } catch (err) {
+          setPastaMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+        }
+      },
+      'Excluir Pasta'
+    );
   };
 
   const handleSelectProcess = (id) => {
@@ -605,33 +610,35 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
 
   const handleBatchProcess = async () => {
     if (selectedProcessIds.length === 0) return;
-    setProcMsg(null);
-    setProcessingMessage('Iniciando processamento em lote...');
-    try {
-      const res = await fetch(`${API_URL}/processos/processar-lote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ ids: selectedProcessIds, revisor_id: selectedRevisorId ? parseInt(selectedRevisorId) : null })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setProcMsg({ 
-          type: 'success', 
-          text: data.message || 'Processamento em lote iniciado em segundo plano!' 
+    confirmAction('Processar Lote', `Deseja enviar ${selectedProcessIds.length} processo(s) para geração automática de peças com a IA?`, async () => {
+      setProcMsg(null);
+      setProcessingMessage('Iniciando processamento em lote...');
+      try {
+        const res = await fetch(`${API_URL}/processos/processar-lote`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ ids: selectedProcessIds, revisor_id: selectedRevisorId ? parseInt(selectedRevisorId) : null })
         });
-        setSelectedProcessIds([]);
-        fetchProcessos();
-      } else {
-        setProcMsg({ type: 'error', text: data.detail || 'Erro ao processar lote.' });
+        const data = await res.json();
+        if (res.ok) {
+          setProcMsg({ 
+            type: 'success', 
+            text: data.message || 'Processamento em lote iniciado em segundo plano!' 
+          });
+          setSelectedProcessIds([]);
+          fetchProcessos();
+        } else {
+          setProcMsg({ type: 'error', text: data.detail || 'Erro ao processar lote.' });
+        }
+      } catch (err) {
+        setProcMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+      } finally {
+        setProcessingMessage(null);
       }
-    } catch (err) {
-      setProcMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    } finally {
-      setProcessingMessage(null);
-    }
+    }, 'Iniciar IA');
   };
 
   const handleOpenReviewModal = (processo) => {
@@ -681,120 +688,126 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
 
   const handleSaveReviewDraft = async () => {
     if (!reviewingProcess) return;
-    setReviewMsg(null);
-    try {
-      const res = await fetch(`${API_URL}/processos/${reviewingProcess.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          cliente: reviewingProcess.cliente,
-          juizo: reviewingProcess.juizo,
-          tipo_peca: reviewingProcess.tipo_peca,
-          resumo_fatos: reviewingProcess.resumo_fatos,
-          teses_principais: reviewingProcess.teses_principais,
-          materia: reviewingProcess.materia,
-          data_prazo: reviewingProcess.data_prazo || null,
-          fundamentacao_revisada: reviewingProcess.fundamentacao_revisada,
-          pedidos_revisados: reviewingProcess.pedidos_revisados,
-          status: reviewingProcess.status
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setReviewMsg({ type: 'success', text: 'Rascunho salvo com sucesso!' });
-        fetchProcessos();
-      } else {
-        setReviewMsg({ type: 'error', text: data.detail || 'Erro ao salvar rascunho.' });
+    confirmAction('Salvar Rascunho', 'Deseja realmente salvar as alterações manuais feitas nesta peça?', async () => {
+      setReviewMsg(null);
+      try {
+        const res = await fetch(`${API_URL}/processos/${reviewingProcess.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            cliente: reviewingProcess.cliente,
+            juizo: reviewingProcess.juizo,
+            tipo_peca: reviewingProcess.tipo_peca,
+            resumo_fatos: reviewingProcess.resumo_fatos,
+            teses_principais: reviewingProcess.teses_principais,
+            materia: reviewingProcess.materia,
+            data_prazo: reviewingProcess.data_prazo || null,
+            fundamentacao_revisada: reviewingProcess.fundamentacao_revisada,
+            pedidos_revisados: reviewingProcess.pedidos_revisados,
+            status: reviewingProcess.status
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setReviewMsg({ type: 'success', text: 'Rascunho salvo com sucesso!' });
+          fetchProcessos();
+        } else {
+          setReviewMsg({ type: 'error', text: data.detail || 'Erro ao salvar rascunho.' });
+        }
+      } catch (err) {
+        setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
       }
-    } catch (err) {
-      setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    }
+    });
   };
 
   const handleReprocessProcess = async () => {
     if (!reviewingProcess) return;
-    setReviewMsg(null);
-    setProcessingMessage('Regerando petição com IA e dados RAG...');
-    try {
-      const saveRes = await fetch(`${API_URL}/processos/${reviewingProcess.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          cliente: reviewingProcess.cliente,
-          juizo: reviewingProcess.juizo,
-          tipo_peca: reviewingProcess.tipo_peca,
-          resumo_fatos: reviewingProcess.resumo_fatos,
-          teses_principais: reviewingProcess.teses_principais,
-          materia: reviewingProcess.materia,
-          data_prazo: reviewingProcess.data_prazo || null,
-          fundamentacao_revisada: reviewingProcess.fundamentacao_revisada,
-          pedidos_revisados: reviewingProcess.pedidos_revisados,
-          status: reviewingProcess.status
-        })
-      });
-      
-      if (!saveRes.ok) {
-        const errData = await saveRes.json();
-        setReviewMsg({ type: 'error', text: `Erro ao salvar alterações antes de reprocessar: ${errData.detail}` });
+    confirmAction('Regerar com IA', 'Deseja descartar a redação atual e regerar esta peça usando a Inteligência Artificial novamente?', async () => {
+      setReviewMsg(null);
+      setProcessingMessage('Regerando petição com IA e dados RAG...');
+      try {
+        const saveRes = await fetch(`${API_URL}/processos/${reviewingProcess.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            cliente: reviewingProcess.cliente,
+            juizo: reviewingProcess.juizo,
+            tipo_peca: reviewingProcess.tipo_peca,
+            resumo_fatos: reviewingProcess.resumo_fatos,
+            teses_principais: reviewingProcess.teses_principais,
+            materia: reviewingProcess.materia,
+            data_prazo: reviewingProcess.data_prazo || null,
+            fundamentacao_revisada: reviewingProcess.fundamentacao_revisada,
+            pedidos_revisados: reviewingProcess.pedidos_revisados,
+            status: reviewingProcess.status
+          })
+        });
+        
+        if (!saveRes.ok) {
+          const errData = await saveRes.json();
+          setReviewMsg({ type: 'error', text: `Erro ao salvar alterações antes de reprocessar: ${errData.detail}` });
+          setProcessingMessage(null);
+          return;
+        }
+        
+        const res = await fetch(`${API_URL}/processos/${reviewingProcess.id}/reprocessar`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setReviewMsg({ type: 'success', text: 'Geração com IA iniciada! Pode fechar este modal; o status será atualizado na fila.' });
+          setIsReviewModalOpen(false);
+          fetchProcessos();
+        } else {
+          setReviewMsg({ type: 'error', text: data.detail || 'Erro ao iniciar regeração.' });
+        }
+      } catch (err) {
+        setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+      } finally {
         setProcessingMessage(null);
-        return;
       }
-      
-      const res = await fetch(`${API_URL}/processos/${reviewingProcess.id}/reprocessar`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setReviewMsg({ type: 'success', text: 'Geração com IA iniciada! Pode fechar este modal; o status será atualizado na fila.' });
-        setIsReviewModalOpen(false);
-        fetchProcessos();
-      } else {
-        setReviewMsg({ type: 'error', text: data.detail || 'Erro ao iniciar regeração.' });
-      }
-    } catch (err) {
-      setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    } finally {
-      setProcessingMessage(null);
-    }
+    });
   };
 
   const handleApproveProcess = async () => {
     if (!reviewingProcess) return;
-    setReviewMsg(null);
-    setProcessingMessage('Aprovando petição e gerando documento Word...');
-    try {
-      const res = await fetch(`${API_URL}/processos/${reviewingProcess.id}/aprovar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          fundamentacao_revisada: reviewingProcess.fundamentacao_revisada,
-          pedidos_revisados: reviewingProcess.pedidos_revisados,
-          salvar_rag: salvarRag
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setIsReviewModalOpen(false);
-        fetchProcessos();
-        setProcMsg({ type: 'success', text: `Minuta aprovada e gerada com sucesso! RAG atualizado.` });
-      } else {
-        setReviewMsg({ type: 'error', text: data.detail || 'Erro ao aprovar minuta.' });
+    confirmAction('Aprovar Peça e Gerar Word', 'Você revisou o documento e deseja aprová-á-lo definitivamente? Um arquivo Word será gerado pronto para protocolo.', async () => {
+      setReviewMsg(null);
+      setProcessingMessage('Aprovando petição e gerando documento Word...');
+      try {
+        const res = await fetch(`${API_URL}/processos/${reviewingProcess.id}/aprovar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            fundamentacao_revisada: reviewingProcess.fundamentacao_revisada,
+            pedidos_revisados: reviewingProcess.pedidos_revisados,
+            salvar_rag: salvarRag
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setIsReviewModalOpen(false);
+          fetchProcessos();
+          setProcMsg({ type: 'success', text: `Minuta aprovada e gerada com sucesso! Arquivo disponível na fila.` });
+        } else {
+          setReviewMsg({ type: 'error', text: data.detail || 'Erro ao aprovar minuta.' });
+        }
+      } catch (err) {
+        setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
+      } finally {
+        setProcessingMessage(null);
       }
-    } catch (err) {
-      setReviewMsg({ type: 'error', text: `Erro de rede: ${err.message}` });
-    } finally {
-      setProcessingMessage(null);
-    }
+    });
   };
 
   const handleDownloadPDF = async (processoId) => {
