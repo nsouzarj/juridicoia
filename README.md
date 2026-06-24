@@ -203,3 +203,9 @@ flowchart TD
 2. **Backend Escalável**: O FastAPI roda como contêineres Docker no **Amazon ECS com AWS Fargate**, permitindo que o sistema aumente a capacidade automaticamente se houver um pico de 500 processos enviados simultaneamente.
 3. **Banco de Dados Gerenciado**: O **Amazon RDS** suporta a extensão `pgvector` nativamente, garantindo backups automáticos e segurança para os dados sigilosos e embeddings das jurisprudências.
 4. **Armazenamento de Peças**: Em vez do disco local da máquina, os documentos `.docx` podem ser salvos e baixados diretamente pelo **Amazon EFS** (disco de rede) ou **Amazon S3**, impedindo perda de arquivos em caso de reinicialização dos servidores.
+
+### 📈 Escalonamento Horizontal (Para Altíssimos Volumes)
+A arquitetura do Praxis é **stateless**, o que significa que foi desenhada para escalar horizontalmente de forma automática:
+* **Frontend**: O S3 e o CloudFront escalam infinitamente de forma nativa.
+* **Banco de Dados (Leitura Vetorial)**: O RDS permite habilitar *Read Replicas* (Clones de Leitura) caso milhares de advogados pesquisem no RAG simultaneamente.
+* **Processamento de Peças em Lote (Worker + SQS)**: Para gerar planilhas gigantes de **5.000 ou mais processos**, o Load Balancer (ALB) da AWS cria novos contêineres iguais ao backend automaticamente quando a CPU atinge 70% de uso. Para maximizar essa performance, recomenda-se integrar o **Amazon SQS (Simple Queue Service)**. O backend joga os processos na fila e um "exército" de contêineres puxa os casos do SQS, gerando centenas de minutas em paralelo e com total segurança anti-falha.
