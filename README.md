@@ -146,3 +146,60 @@ O sistema suporta três perfis de acesso distintos configurados via banco de dad
 * **Administrador**: Controle total, gestão de usuários, definição de pastas de saída e reprocessamento.
 * **Advogado**: Criação de casos, importação de CSVs, alimentação da base de dados RAG e aprovação final das peças.
 * **Revisor**: Leitura dos casos cadastrados, visualização de estatísticas e controle das jurisprudências.
+
+---
+
+## ☁️ Arquitetura AWS (Cloud-Native) Recomendada
+
+Para escritórios que desejam sair do ambiente local/VM e escalar a operação de forma segura na nuvem da Amazon Web Services (AWS), a arquitetura abaixo demonstra como a plataforma se comporta em um ambiente de alto nível de disponibilidade e segurança:
+
+```mermaid
+flowchart TD
+    %% Cores AWS Estilizadas
+    classDef client fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef frontend fill:#ff9900,stroke:#232f3e,stroke-width:2px,color:#fff;
+    classDef backend fill:#e05243,stroke:#232f3e,stroke-width:2px,color:#fff;
+    classDef database fill:#336699,stroke:#232f3e,stroke-width:2px,color:#fff;
+    classDef storage fill:#527a24,stroke:#232f3e,stroke-width:2px,color:#fff;
+    classDef ai fill:#6b4ce6,stroke:#232f3e,stroke-width:2px,color:#fff;
+
+    subgraph Internet ["🌐 Internet"]
+        User["🧑‍⚖️ Usuário (Advogado)"]:::client
+    end
+
+    subgraph FrontendZone ["🗂️ Zona de Frontend Estático (AWS Edge)"]
+        CF["🌍 AWS CloudFront (CDN)"]:::frontend
+        S3Web["🪣 Amazon S3 (Hospedagem React/Vite)"]:::storage
+        CF -. "Busca os arquivos HTML/JS" .-> S3Web
+    end
+
+    subgraph BackendZone ["⚙️ Zona de Aplicação (AWS VPC - Rede Privada)"]
+        ALB["⚖️ Application Load Balancer"]:::frontend
+        ECS["🐳 Amazon ECS / AWS Fargate\n(Contêineres FastAPI)"]:::backend
+        ALB -. "Distribui Carga" .-> ECS
+    end
+
+    subgraph DataZone ["💾 Zona de Dados (Isolada)"]
+        RDS[("🐘 Amazon RDS\n(PostgreSQL + pgvector)")]:::database
+        S3Docs["🗂️ Amazon S3 ou Amazon EFS\n(Armazenamento de .docx)"]:::storage
+    end
+
+    subgraph ExternalServices ["🧠 Inteligência Artificial"]
+        LLM["🤖 OpenRouter API\n(LLM GPT/Claude)"]:::ai
+    end
+
+    %% Fluxos de Conexão
+    User == "1. Acessa o Sistema\n(HTTPS)" ==> CF
+    User == "2. Requisições API\n(Login, Enviar Lote)" ==> ALB
+    
+    ECS == "3. Salva / Busca Casos e\nVetores RAG" ==> RDS
+    ECS == "4. Envia Prompts\ne Pede Redação" ==> LLM
+    LLM == "Retorna Texto" ==> ECS
+    ECS == "5. Salva Documento Final" ==> S3Docs
+```
+
+### Componentes da Arquitetura:
+1. **Frontend Serverless**: O React (Vite) é hospedado de forma estática e barata no **Amazon S3** e distribuído globalmente com baixíssima latência via **AWS CloudFront**.
+2. **Backend Escalável**: O FastAPI roda como contêineres Docker no **Amazon ECS com AWS Fargate**, permitindo que o sistema aumente a capacidade automaticamente se houver um pico de 500 processos enviados simultaneamente.
+3. **Banco de Dados Gerenciado**: O **Amazon RDS** suporta a extensão `pgvector` nativamente, garantindo backups automáticos e segurança para os dados sigilosos e embeddings das jurisprudências.
+4. **Armazenamento de Peças**: Em vez do disco local da máquina, os documentos `.docx` podem ser salvos e baixados diretamente pelo **Amazon EFS** (disco de rede) ou **Amazon S3**, impedindo perda de arquivos em caso de reinicialização dos servidores.
