@@ -47,15 +47,9 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
   const [materias, setMaterias] = useState([]);
   const [isPrecedentModalOpen, setIsPrecedentModalOpen] = useState(false);
   const [editingPrecedent, setEditingPrecedent] = useState(null);
-  const [isDeletePrecedentOpen, setIsDeletePrecedentOpen] = useState(false);
-  const [deletingPrecedent, setDeletingPrecedent] = useState(null);
   const [usuarios, setUsuarios] = useState([]);
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState({ id: '', nome: '', email: '', senha: '', cargo: 'advogado', oab: '' });
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [deletingUser, setDeletingUser] = useState(null);
-  const [isDeletePastaOpen, setIsDeletePastaOpen] = useState(false);
-  const [deletingPasta, setDeletingPasta] = useState(null);
   const [selectedRevisorId, setSelectedRevisorId] = useState('');
   
   const [confirmDialog, setConfirmDialog] = useState({
@@ -120,6 +114,15 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
       if (res.ok) {
         const data = await res.json();
         setProcessos(data);
+        const checkableIds = new Set(
+          data
+            .filter(p => p.status === 'PENDENTE' || p.status === 'ERRO_PROCESSAMENTO')
+            .map(p => p.id)
+        );
+        setSelectedProcessIds(prev => {
+          const filtered = prev.filter(id => checkableIds.has(id));
+          return filtered.length !== prev.length ? filtered : prev;
+        });
       }
     } catch (err) {
       console.error('Erro ao buscar processos:', err);
@@ -1859,26 +1862,6 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 </div>
               </div>
             )}
-
-            {/* Modal de Confirmação de Exclusão de Precedente */}
-            {isDeletePrecedentOpen && deletingPrecedent && (
-              <div className="modal-overlay" onClick={() => setIsDeletePrecedentOpen(false)}>
-                <div className="modal-content" style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
-                  <div className="modal-header">
-                    <h3 className="modal-title font-cinzel" style={{ color: 'var(--error)' }}>⚠️ Confirmar Exclusão</h3>
-                    <button className="modal-close-btn" onClick={() => setIsDeletePrecedentOpen(false)}>✕</button>
-                  </div>
-                  <div style={{ padding: '15px 0', color: 'var(--text-primary)' }}>
-                    <p>Você tem certeza que deseja excluir o precedente com a ementa iniciada em: <strong>"{deletingPrecedent.ementa.substring(0, 50)}..."</strong>?</p>
-                    <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>Esta ação é irreversível e removerá permanentemente o vetor de busca do RAG.</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px', justifyContent: 'flex-end' }}>
-                    <button type="button" className="btn btn-secondary" onClick={() => setIsDeletePrecedentOpen(false)}>Cancelar</button>
-                    <button type="button" className="btn btn-secondary" style={{ borderColor: 'var(--error)', color: 'var(--error)' }} onClick={handleDeletePrecedent}>🗑️ Confirmar Exclusão</button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -2307,47 +2290,6 @@ function Dashboard({ token, user, onLogout, theme, toggleTheme }) {
                 </div>
               </div>
             )}
-
-            {/* Modal de Confirmação de Exclusão */}
-            {isDeleteConfirmOpen && deletingUser && (
-              <div className="modal-overlay" onClick={() => setIsDeleteConfirmOpen(false)}>
-                <div className="modal-content" style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
-                  <div className="modal-header">
-                    <h3 className="modal-title font-cinzel" style={{ color: 'var(--error)' }}>⚠️ Confirmar Exclusão</h3>
-                    <button className="modal-close-btn" onClick={() => setIsDeleteConfirmOpen(false)}>✕</button>
-                  </div>
-                  <div style={{ padding: '15px 0', color: 'var(--text-primary)' }}>
-                    <p>Você tem certeza que deseja excluir o operador <strong>{deletingUser.nome}</strong> ({deletingUser.email})?</p>
-                    <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>Esta ação é irreversível e o operador perderá acesso imediato ao sistema.</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px', justifyContent: 'flex-end' }}>
-                    <button type="button" className="btn btn-secondary" onClick={() => setIsDeleteConfirmOpen(false)}>Cancelar</button>
-                    <button type="button" className="btn btn-secondary" style={{ borderColor: 'var(--error)', color: 'var(--error)' }} onClick={handleDeleteUser}>🗑️ Confirmar Exclusão</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Modal de Confirmação de Exclusão de Pasta */}
-            {isDeletePastaOpen && deletingPasta && (
-              <div className="modal-overlay" onClick={() => setIsDeletePastaOpen(false)}>
-                <div className="modal-content" style={{ maxWidth: '450px' }} onClick={(e) => e.stopPropagation()}>
-                  <div className="modal-header">
-                    <h3 className="modal-title font-cinzel" style={{ color: 'var(--error)' }}>⚠️ Confirmar Exclusão</h3>
-                    <button className="modal-close-btn" onClick={() => setIsDeletePastaOpen(false)}>✕</button>
-                  </div>
-                  <div style={{ padding: '15px 0', color: 'var(--text-primary)' }}>
-                    <p>Você tem certeza que deseja excluir o mapeamento da pasta: <strong style={{ wordBreak: 'break-all' }}>{deletingPasta.caminho}</strong>?</p>
-                    <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>Esta ação removerá o caminho do monitoramento do sistema.</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px', justifyContent: 'flex-end' }}>
-                    <button type="button" className="btn btn-secondary" onClick={() => setIsDeletePastaOpen(false)}>Cancelar</button>
-                    <button type="button" className="btn btn-secondary" style={{ borderColor: 'var(--error)', color: 'var(--error)' }} onClick={handleExcluirPasta}>🗑️ Confirmar Exclusão</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
           </div>
         )}
 

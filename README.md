@@ -139,6 +139,66 @@ Após os containers subirem com sucesso:
 
 > **📁 Arquivos Gerados:** Os documentos `.docx` das peças jurídicas e revisões serão salvos automaticamente e espelhados na pasta `./documentos_gerados` na raiz do seu projeto, graças ao volume compartilhado do Docker!
 
+### 5. Construindo e Executando Imagens Separadamente
+
+Caso necessite compilar as imagens individualmente ou precise levantar um banco de dados PostgreSQL local com suporte a busca vetorial (pgvector):
+
+#### A. Compilar apenas o Backend
+```bash
+docker build -t praxis-backend ./backend
+```
+
+#### B. Compilar apenas o Frontend
+```bash
+docker build -t praxis-frontend ./frontend
+```
+
+#### C. Executar Banco de Dados (PostgreSQL + pgvector) em container separado
+Como o `docker-compose.yml` padrão conecta a um banco externo/host, você pode subir um banco PostgreSQL isolado com suporte ao `pgvector` usando:
+```bash
+docker run -d \
+  --name praxis_postgres \
+  -p 5432:5432 \
+  -e POSTGRES_DB=postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=senha \
+  ankane/pgvector:latest
+```
+
+### 6. Parando Containers Individualmente
+
+Caso precise parar ou reiniciar apenas um dos serviços ou containers:
+
+#### A. Usando Docker Compose (Multi-container)
+Para parar ou iniciar um serviço específico gerenciado pelo Compose:
+* **Parar apenas o Backend**:
+  ```bash
+  docker compose stop backend
+  ```
+* **Parar apenas o Frontend**:
+  ```bash
+  docker compose stop frontend
+  ```
+* **Iniciar apenas o serviço que está parado**:
+  ```bash
+  docker compose start <servico>
+  ```
+
+#### B. Usando Containers Isolados (Docker Run)
+Se você executou os containers de forma independente:
+* **Parar o Backend**:
+  ```bash
+  docker stop praxis_backend
+  ```
+* **Parar o Frontend**:
+  ```bash
+  docker stop praxis_frontend
+  ```
+* **Parar o Banco de Dados (pgvector)**:
+  ```bash
+  docker stop praxis_postgres
+  ```
+
 ---
 
 ## 👥 Atores do Sistema
