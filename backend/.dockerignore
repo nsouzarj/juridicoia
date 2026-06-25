@@ -3,3 +3,11 @@ venv
 .env
 revisoes_geradas
 .git
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.ruff_cache
+.vscode
+app.py.bak
+dados_processo.json

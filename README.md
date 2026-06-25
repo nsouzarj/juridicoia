@@ -132,6 +132,20 @@ sudo docker compose build --no-cache
 sudo docker compose up -d
 ```
 
+### 3.1. Iniciando Serviços Separadamente (Docker Compose)
+Caso queira iniciar apenas um dos serviços configurados no Compose:
+
+* **Iniciar apenas o Backend**:
+  ```bash
+  docker compose up -d backend
+  ```
+
+* **Iniciar apenas o Frontend (sem as dependências)**:
+  Como o frontend depende do backend, por padrão o Compose iniciará ambos. Para forçar a inicialização **apenas** do frontend, utilize a flag `--no-deps`:
+  ```bash
+  docker compose up -d --no-deps frontend
+  ```
+
 ### 4. Acessando a Plataforma
 Após os containers subirem com sucesso:
 * **Interface Web (Frontend):** Acesse `http://IP_DA_VM:5173` (ou `localhost:5173`).
