@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Central pillar & base of scale in gold/bronze color -->
+  <path d="M32 12v38M20 50h24" stroke="#C5A880" stroke-width="3" stroke-linecap="round"/>
+  <!-- Horizontal balance beam -->
+  <path d="M14 20h36" stroke="#C5A880" stroke-width="3" stroke-linecap="round"/>
+  <!-- Top decor circle -->
+  <circle cx="32" cy="12" r="2.5" fill="#C5A880"/>
+  <!-- Left pan hanging lines and bowl -->
+  <path d="M14 20l-5 16M14 20l5 16" stroke="#C5A880" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M6 36h16c0 4.5-3.5 7.5-8 7.5s-8-3-8-7.5z" fill="#C5A880"/>
+  <!-- Right pan hanging lines and bowl -->
+  <path d="M50 20l-5 16M50 20l5 16" stroke="#C5A880" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M42 36h16c0 4.5-3.5 7.5-8 7.5s-8-3-8-7.5z" fill="#C5A880"/>
+</svg>
