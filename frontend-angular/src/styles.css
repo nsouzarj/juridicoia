@@ -49,6 +49,26 @@
   --accent-gold-hover: #FB7185;
   --accent-glow: rgba(225, 29, 72, 0.15);
 }
+:root[data-color-theme='amethyst'] {
+  --accent-gold: #8B5CF6;
+  --accent-gold-hover: #A78BFA;
+  --accent-glow: rgba(139, 92, 246, 0.15);
+}
+:root[data-color-theme='copper'] {
+  --accent-gold: #F97316;
+  --accent-gold-hover: #FB923C;
+  --accent-glow: rgba(249, 115, 22, 0.15);
+}
+:root[data-color-theme='cyan'] {
+  --accent-gold: #06B6D4;
+  --accent-gold-hover: #22D3EE;
+  --accent-glow: rgba(6, 182, 212, 0.15);
+}
+:root[data-color-theme='rosegold'] {
+  --accent-gold: #F43F5E;
+  --accent-gold-hover: #FB7185;
+  --accent-glow: rgba(244, 63, 94, 0.15);
+}
 
 /* --- Temas de cores (Light Mode) --- */
 :root[data-theme='light'][data-color-theme='emerald'] {
@@ -65,6 +85,26 @@
   --accent-gold: #BE123C;
   --accent-gold-hover: #9F1239;
   --accent-glow: rgba(190, 18, 60, 0.08);
+}
+:root[data-theme='light'][data-color-theme='amethyst'] {
+  --accent-gold: #7C3AED;
+  --accent-gold-hover: #6D28D9;
+  --accent-glow: rgba(124, 58, 237, 0.08);
+}
+:root[data-theme='light'][data-color-theme='copper'] {
+  --accent-gold: #EA580C;
+  --accent-gold-hover: #C2410C;
+  --accent-glow: rgba(234, 88, 12, 0.08);
+}
+:root[data-theme='light'][data-color-theme='cyan'] {
+  --accent-gold: #0891B2;
+  --accent-gold-hover: #0E7490;
+  --accent-glow: rgba(8, 145, 178, 0.08);
+}
+:root[data-theme='light'][data-color-theme='rosegold'] {
+  --accent-gold: #E11D48;
+  --accent-gold-hover: #BE123C;
+  --accent-glow: rgba(225, 29, 72, 0.08);
 }
 
 /* --- Customização Geometria --- */
