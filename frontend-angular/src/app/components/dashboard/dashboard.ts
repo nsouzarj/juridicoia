@@ -47,6 +47,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   salvarRag = signal<boolean>(true);
   activeReviewTab = signal<number>(0);
   showPasswordUser = signal<boolean>(false);
+  selectedProcesso = signal<any | null>(null);
 
   // Modals & messages
   isReviewModalOpen = signal<boolean>(false);

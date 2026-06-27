@@ -29,33 +29,26 @@
       @if (navLayout() === 'sidebar') {
         <nav class="sidebar-nav">
           <button 
-            (click)="activeTab.set(0)" 
+            (click)="activeTab.set(0); selectedProcesso.set(null);" 
             [class.active]="activeTab() === 0"
             class="sidebar-nav-btn"
           >
-            📊 PAINEL
+            ⚖️ CENTRAL DE FILA
           </button>
           <button 
             (click)="activeTab.set(1)" 
             [class.active]="activeTab() === 1"
             class="sidebar-nav-btn"
           >
-            ⚖️ FILA DE PEÇAS
-          </button>
-          <button 
-            (click)="activeTab.set(2)" 
-            [class.active]="activeTab() === 2"
-            class="sidebar-nav-btn"
-          >
             📚 COFRE RAG
           </button>
           @if (authService.user()?.cargo === 'admin') {
             <button 
-              (click)="activeTab.set(3)" 
-              [class.active]="activeTab() === 3"
+              (click)="activeTab.set(2)" 
+              [class.active]="activeTab() === 2"
               class="sidebar-nav-btn"
             >
-              ⚙️ ADMIN / CONFIG
+              ⚙️ CONFIGURAÇÕES
             </button>
           }
         </nav>
@@ -91,436 +84,445 @@
     <!-- Tab Headers (Top Navigation) -->
     @if (navLayout() !== 'sidebar') {
       <div class="tabs-header">
-        <button (click)="activeTab.set(0)" class="tab-btn" [class.active]="activeTab() === 0">📊 PAINEL</button>
-        <button (click)="activeTab.set(1)" class="tab-btn" [class.active]="activeTab() === 1">⚖️ FILA DE PEÇAS</button>
-        <button (click)="activeTab.set(2)" class="tab-btn" [class.active]="activeTab() === 2">📚 COFRE RAG</button>
+        <button (click)="activeTab.set(0); selectedProcesso.set(null);" class="tab-btn" [class.active]="activeTab() === 0">⚖️ CENTRAL DE FILA</button>
+        <button (click)="activeTab.set(1)" class="tab-btn" [class.active]="activeTab() === 1">📚 COFRE RAG</button>
         @if (authService.user()?.cargo === 'admin') {
-          <button (click)="activeTab.set(3)" class="tab-btn" [class.active]="activeTab() === 3">⚙️ ADMIN</button>
+          <button (click)="activeTab.set(2)" class="tab-btn" [class.active]="activeTab() === 2">⚙️ CONFIGURAÇÕES</button>
         }
       </div>
     }
 
-    <!-- Tab 0: Painel -->
+    <!-- Tab 0: Central de Fila (Master-Detail Split Layout) -->
     @if (activeTab() === 0) {
-      <div class="section">
-        <h2 class="font-cinzel">Painel de Controle e Estatísticas</h2>
+      <div class="section" style="padding: 10px 0;">
         
-        <!-- Metric Summary Cards Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
-          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 20px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; height: 4px; width: 100%; background-color: var(--accent-gold);"></div>
-            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: bold; letter-spacing: 1px;">Total de Processos</span>
-            <span style="font-size: 36px; font-weight: bold; color: var(--text-primary); margin-top: 10px; font-family: 'Outfit', sans-serif;">{{ stats().total_processos }}</span>
+        <!-- Combined Header & Search Filters -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 25px; padding: 0 10px;">
+          <div>
+            <h2 class="font-cinzel" style="margin: 0; font-size: 22px; background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Central de Fila e Processos</h2>
+            <p style="color: var(--text-secondary); font-size: 13px; margin: 5px 0 0 0;">Monitore estatísticas e revise minutas em lote em um único painel integrado.</p>
           </div>
-
-          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 20px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; height: 4px; width: 100%; background-color: var(--warning-color);"></div>
-            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: bold; letter-spacing: 1px;">Pendentes</span>
-            <span style="font-size: 36px; font-weight: bold; color: var(--text-primary); margin-top: 10px; font-family: 'Outfit', sans-serif;">{{ stats().status_counts?.PENDENTE || 0 }}</span>
-          </div>
-
-          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 20px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; height: 4px; width: 100%; background-color: #3498db;"></div>
-            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: bold; letter-spacing: 1px;">Em Andamento</span>
-            <span style="font-size: 36px; font-weight: bold; color: var(--text-primary); margin-top: 10px; font-family: 'Outfit', sans-serif;">{{ stats().status_counts?.PROCESSANDO || 0 }}</span>
-          </div>
-
-          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 20px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; height: 4px; width: 100%; background-color: var(--success-color);"></div>
-            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: bold; letter-spacing: 1px;">Em Revisão</span>
-            <span style="font-size: 36px; font-weight: bold; color: var(--text-primary); margin-top: 10px; font-family: 'Outfit', sans-serif;">{{ stats().status_counts?.REVISAO || 0 }}</span>
-          </div>
-
-          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 20px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; height: 4px; width: 100%; background-color: #1abc9c;"></div>
-            <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: bold; letter-spacing: 1px;">Aprovados</span>
-            <span style="font-size: 36px; font-weight: bold; color: var(--text-primary); margin-top: 10px; font-family: 'Outfit', sans-serif;">{{ stats().status_counts?.PROTOCOLADO || 0 }}</span>
+          
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <input
+              type="text"
+              placeholder="Buscar por cliente, processo, status..."
+              [ngModel]="searchProcessoQuery()"
+              (ngModelChange)="searchProcessoQuery.set($event); currentPage.set(1)"
+              class="form-input"
+              style="width: 280px; margin: 0; border-radius: 8px;"
+            />
+            
+            <!-- Floating style upload CSV button -->
+            <button 
+              type="button" 
+              class="btn btn-secondary" 
+              style="padding: 10px 16px; border-radius: 8px; font-size: 12px; display: flex; align-items: center; gap: 6px;"
+              (click)="activeReviewTab.set(activeReviewTab() === 99 ? 0 : 99); selectedProcesso.set(null);"
+            >
+              <span>📥 Importar CSV</span>
+            </button>
           </div>
         </div>
 
-        <!-- Dashboard Graphs Section -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
-          <!-- Status Distribution Board -->
-          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 25px;">
-            <h3 class="font-cinzel" style="font-size: 16px; margin-bottom: 25px; letter-spacing: 1px;">Distribuição e Fluxo de Minutas</h3>
-            
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-              @let total = stats().total_processos || 0;
-
-              <!-- Pendentes -->
-              @let pPct = total > 0 ? ((stats().status_counts?.PENDENTE || 0) / total) * 100 : 0;
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #e67e22; box-shadow: 0 0 8px #e67e22;"></div>
-                    <span style="color: var(--text-secondary); font-weight: 500;">Pendentes</span>
-                  </div>
-                  <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.PENDENTE || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ pPct | number:'1.0-1' }}%)</span>
-                  </span>
-                </div>
-                <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="pPct" style="height: 100%; background: linear-gradient(90deg, #d35400 0%, #e67e22 100%); box-shadow: 0 0 10px rgba(230, 126, 34, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
-                </div>
-              </div>
-
-              <!-- Em Processo -->
-              @let prPct = total > 0 ? ((stats().status_counts?.PROCESSANDO || 0) / total) * 100 : 0;
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #3498db; box-shadow: 0 0 8px #3498db;"></div>
-                    <span style="color: var(--text-secondary); font-weight: 500;">Em Processamento</span>
-                  </div>
-                  <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.PROCESSANDO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ prPct | number:'1.0-1' }}%)</span>
-                  </span>
-                </div>
-                <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="prPct" style="height: 100%; background: linear-gradient(90deg, #2980b9 0%, #3498db 100%); box-shadow: 0 0 10px rgba(52, 152, 219, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
-                </div>
-              </div>
-
-              <!-- Revisão -->
-              @let revPct = total > 0 ? ((stats().status_counts?.REVISAO || 0) / total) * 100 : 0;
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #2ecc71; box-shadow: 0 0 8px #2ecc71;"></div>
-                    <span style="color: var(--text-secondary); font-weight: 500;">Em Revisão</span>
-                  </div>
-                  <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.REVISAO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ revPct | number:'1.0-1' }}%)</span>
-                  </span>
-                </div>
-                <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="revPct" style="height: 100%; background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%); box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
-                </div>
-              </div>
-
-              <!-- Aprovados -->
-              @let protPct = total > 0 ? ((stats().status_counts?.PROTOCOLADO || 0) / total) * 100 : 0;
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #1abc9c; box-shadow: 0 0 8px #1abc9c;"></div>
-                    <span style="color: var(--text-secondary); font-weight: 500;">Aprovados</span>
-                  </div>
-                  <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.PROTOCOLADO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ protPct | number:'1.0-1' }}%)</span>
-                  </span>
-                </div>
-                <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="protPct" style="height: 100%; background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%); box-shadow: 0 0 10px rgba(26, 188, 156, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
-                </div>
-              </div>
-
-              <!-- Falhas -->
-              @let errPct = total > 0 ? ((stats().status_counts?.ERRO_PROCESSAMENTO || 0) / total) * 100 : 0;
-              <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #e74c3c; box-shadow: 0 0 8px #e74c3c;"></div>
-                    <span style="color: var(--text-secondary); font-weight: 500;">Falhas de Geração</span>
-                  </div>
-                  <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.ERRO_PROCESSAMENTO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ errPct | number:'1.0-1' }}%)</span>
-                  </span>
-                </div>
-                <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="errPct" style="height: 100%; background: linear-gradient(90deg, #c0392b 0%, #e74c3c 100%); box-shadow: 0 0 10px rgba(231, 76, 60, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
-                </div>
-              </div>
+        <!-- Inline CSV Upload section if toggled -->
+        @if (activeReviewTab() === 99) {
+          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--accent-gold); border-radius: 12px; padding: 25px; margin: 0 10px 25px 10px; position: relative;">
+            <button 
+              type="button" 
+              (click)="activeReviewTab.set(0)"
+              style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-secondary); font-size: 16px; cursor: pointer;"
+            >✕</button>
+            <h3 class="font-cinzel" style="font-size: 15px; margin-bottom: 15px;">Importar Novos Casos via Planilha</h3>
+            <div class="file-uploader" style="border: 2px dashed rgba(255,255,255,0.1); border-radius: 8px; padding: 30px; text-align: center;">
+              <span class="upload-icon" style="font-size: 32px;">📥</span>
+              <p class="upload-text" style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;"><strong>Selecione a planilha de processos</strong> ou arraste o arquivo .CSV</p>
+              <input
+                type="file"
+                accept=".csv"
+                class="file-input"
+                (change)="handleUploadProcessos($event)"
+                style="cursor: pointer;"
+              />
             </div>
-          </div>
-
-          <!-- Pie Chart Card -->
-          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 25px; display: flex; flex-direction: column;">
-            <h3 class="font-cinzel" style="font-size: 16px; margin-bottom: 20px; letter-spacing: 1px;">Visão Geral do Fluxo</h3>
-            
-            <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 180px;">
-              @if (pieSlices().length > 0) {
-                <!-- Pie SVG -->
-                <svg viewBox="0 0 100 100" style="width: 160px; height: 160px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.03));">
-                  @for (slice of pieSlices(); track slice.name) {
-                    <path
-                      [attr.d]="slice.path"
-                      [attr.fill]="slice.color"
-                      stroke="rgba(18, 20, 23, 0.6)"
-                      stroke-width="1.5"
-                      style="transition: transform 0.3s ease; cursor: pointer; transform-origin: 50px 50px;"
-                      onmouseover="this.style.transform='scale(1.03)';"
-                      onmouseout="this.style.transform='scale(1)';"
-                    >
-                      <title>{{ slice.name }}: {{ slice.count }} minutas ({{ slice.percentage | number:'1.0-1' }}%)</title>
-                    </path>
-                  }
-                </svg>
-                
-                <!-- Center hole style detail -->
-                <div style="position: absolute; width: 60px; height: 60px; border-radius: 50%; background-color: var(--bg-secondary); border: 1px dashed rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
-                  <span style="font-size: 14px; font-weight: bold; color: var(--text-primary);">{{ stats().total_processos }}</span>
-                  <span style="font-size: 8px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px;">Minutas</span>
-                </div>
-              } @else {
-                <div style="color: var(--text-secondary); font-size: 13px;">Nenhum caso cadastrado.</div>
-              }
-            </div>
-          </div>
-
-          <!-- Materias volume horizontal chart -->
-          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 25px;">
-            <h3 class="font-cinzel" style="font-size: 16px; margin-bottom: 20px; letter-spacing: 1px;">Casos por Matéria Jurídica</h3>
-            
-            <div style="max-height: 180px; overflow-y: auto; padding-right: 5px;">
-              @if (statsMateriaEntries.length > 0) {
-                @for (entry of statsMateriaEntries; track entry.materia) {
-                  @let percent = (entry.count / maxMateriaValue) * 100;
-                  <div style="margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                      <span style="color: var(--text-primary); font-weight: bold;">{{ entry.materia }}</span>
-                      <span style="color: var(--accent-gold); font-weight: bold;">{{ entry.count }} {{ entry.count === 1 ? 'caso' : 'casos' }}</span>
-                    </div>
-                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
-                      <div [style.width.%]="percent" style="height: 100%; background: linear-gradient(90deg, var(--accent-gold) 0%, var(--accent-gold-hover) 100%); border-radius: 3px; transition: width 0.8s ease-out;"></div>
-                    </div>
-                  </div>
-                }
-              } @else {
-                <div style="display: flex; height: 100px; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 13px;">
-                  Nenhum caso indexado.
-                </div>
-              }
-            </div>
-          </div>
-
-          <!-- Piece Types volume chart -->
-          <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 25px;">
-            <h3 class="font-cinzel" style="font-size: 16px; margin-bottom: 20px; letter-spacing: 1px;">Tipo de Petição (Minutas)</h3>
-            
-            <div style="max-height: 180px; overflow-y: auto; padding-right: 5px;">
-              @if (statsTipoPecaEntries.length > 0) {
-                @for (entry of statsTipoPecaEntries; track entry.peca) {
-                  @let percent = (entry.count / maxTipoPecaValue) * 100;
-                  <div style="margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                      <span style="color: var(--text-primary); font-weight: bold;">{{ entry.peca }}</span>
-                      <span style="color: var(--accent-gold); font-weight: bold;">{{ entry.count }} {{ entry.count === 1 ? 'peça' : 'peças' }}</span>
-                    </div>
-                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
-                      <div [style.width.%]="percent" style="height: 100%; background: linear-gradient(90deg, #cd7f32 0%, var(--accent-gold) 100%); border-radius: 3px; transition: width 0.8s ease-out;"></div>
-                    </div>
-                  </div>
-                }
-              } @else {
-                <div style="display: flex; height: 100px; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 13px;">
-                  Nenhuma minuta gerada.
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-
-    <!-- Tab 1: Fila de Peças -->
-    @if (activeTab() === 1) {
-      <div class="section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <h2 class="font-cinzel" style="margin: 0;">Fila de Casos (Urgência por Prazo)</h2>
-          <input
-            type="text"
-            placeholder="Buscar por cliente, processo, status..."
-            [ngModel]="searchProcessoQuery()"
-            (ngModelChange)="searchProcessoQuery.set($event); currentPage.set(1)"
-            class="form-input"
-            style="width: 300px; margin: 0;"
-          />
-        </div>
-
-        @if (selectedProcessIds().length > 0) {
-          <div style="display: flex; justify-content: space-between; align-items: center; background-color: rgba(255, 255, 255, 0.05); padding: 12px 20px; border-radius: var(--border-radius-base); margin-bottom: 15px; border: 1px solid rgba(255, 255, 255, 0.1);">
-            <span style="font-size: 14px; color: var(--text-secondary);">
-              <strong>{{ selectedProcessIds().length }}</strong> {{ selectedProcessIds().length === 1 ? 'processo selecionado' : 'processos selecionados' }}
-            </span>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              @if (authService.user()?.cargo === 'admin') {
-                <select 
-                  class="form-input" 
-                  style="margin: 0; padding: 6px; font-size: 13px; width: 200px;"
-                  [ngModel]="selectedRevisorId()"
-                  (ngModelChange)="selectedRevisorId.set($event)"
-                >
-                  <option value="">Atribuir Revisor (Opcional)</option>
-                  @for (u of usuarios(); track u.id) {
-                    @if (u.cargo === 'revisor' || u.cargo === 'advogado') {
-                      <option [value]="u.id">{{ u.nome }} ({{ u.cargo }})</option>
-                    }
-                  }
-                </select>
-              }
-              <button 
-                (click)="handleBatchProcess()" 
-                class="btn btn-primary"
-                style="margin: 0; padding: 8px 16px; font-size: 13px;"
-              >
-                🚀 Processar Lote Selecionado
-              </button>
-            </div>
+            @if (csvProcMsg(); as msg) {
+              <div class="alert" [class.alert-success]="msg.type === 'success'" [class.alert-error]="msg.type === 'error'" style="margin-top: 15px; font-size: 13px;">{{ msg.text }}</div>
+            }
           </div>
         }
 
-        <div class="table-container">
-          @if (processos().length > 0) {
-            <table class="custom-table">
-              <thead>
-                <tr>
-                  <th style="width: 40px; text-align: center;">
-                    <input 
-                      type="checkbox" 
-                      [checked]="isAllSelected()" 
-                      (change)="handleSelectAll()"
-                      style="cursor: pointer;"
-                    />
-                  </th>
-                  <th>ID</th>
-                  <th>Processo</th>
-                  <th>Cliente</th>
-                  <th>Status</th>
-                  <th>Prazo Limite</th>
-                  <th>Matéria</th>
-                  <th>Tipo de Peça</th>
-                  <th>Revisor</th>
-                  <th style="width: 120px;">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
+        <!-- Workspace Split Layout -->
+        <div style="display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; padding: 0 10px;">
+          
+          <!-- Master Column: Process Cards List (62% width) -->
+          <div style="flex: 1.6; min-width: 320px; display: flex; flex-direction: column; gap: 15px;">
+            
+            <!-- Batch Action Banner -->
+            @if (selectedProcessIds().length > 0) {
+              <div style="display: flex; justify-content: space-between; align-items: center; background-color: rgba(16, 185, 129, 0.05); padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.2); animation: slideIn 0.3s ease-out;">
+                <span style="font-size: 13px; color: var(--text-secondary);">
+                  <strong style="color: #10B981;">{{ selectedProcessIds().length }}</strong> {{ selectedProcessIds().length === 1 ? 'processo selecionado' : 'processos selecionados' }}
+                </span>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  @if (authService.user()?.cargo === 'admin') {
+                    <select 
+                      class="form-input" 
+                      style="margin: 0; padding: 6px 12px; font-size: 12px; width: 180px; border-radius: 6px; background: var(--bg-secondary);"
+                      [ngModel]="selectedRevisorId()"
+                      (ngModelChange)="selectedRevisorId.set($event)"
+                    >
+                      <option value="">Atribuir Revisor</option>
+                      @for (u of usuarios(); track u.id) {
+                        @if (u.cargo === 'revisor' || u.cargo === 'advogado') {
+                          <option [value]="u.id">{{ u.nome }}</option>
+                        }
+                      }
+                    </select>
+                  }
+                  <button 
+                    (click)="handleBatchProcess()" 
+                    class="btn btn-primary"
+                    style="margin: 0; padding: 8px 14px; font-size: 12px; border-radius: 6px;"
+                  >
+                    🚀 Processar Lote
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Card List of Processes -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              @if (processos().length > 0) {
                 @for (p of paginatedProcessos(); track p.id) {
                   @let canSelect = p.status === 'PENDENTE' || p.status === 'ERRO_PROCESSAMENTO';
-                  <tr>
-                    <td style="text-align: center;">
-                      <input 
-                        type="checkbox"
-                        [disabled]="!canSelect"
-                        [checked]="selectedProcessIds().includes(p.id)"
-                        (change)="handleSelectProcess(p.id)"
-                        [style.cursor]="canSelect ? 'pointer' : 'not-allowed'"
-                      />
-                    </td>
-                    <td>{{ p.id }}</td>
-                    <td>{{ p.numero_processo }}</td>
-                    <td>{{ p.cliente }}</td>
-                    <td>
+                  @let isSelected = selectedProcesso()?.id === p.id;
+                  
+                  <div 
+                    (click)="selectedProcesso.set(p)"
+                    [style.borderColor]="isSelected ? 'var(--accent-gold)' : 'rgba(255,255,255,0.08)'"
+                    [style.background]="isSelected ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)'"
+                    [style.boxShadow]="isSelected ? '0 0 12px var(--accent-glow)' : 'none'"
+                    style="border: 1px solid; border-radius: 12px; padding: 18px; display: flex; align-items: center; justify-content: space-between; gap: 15px; cursor: pointer; transition: all 0.25s ease;"
+                    class="process-card-row"
+                  >
+                    <!-- Left: Checkbox & Meta -->
+                    <div style="display: flex; align-items: center; gap: 15px; flex: 1; min-width: 0;">
+                      <div (click)="$event.stopPropagation()" style="display: flex; align-items: center;">
+                        <input 
+                          type="checkbox"
+                          [disabled]="!canSelect"
+                          [checked]="selectedProcessIds().includes(p.id)"
+                          (change)="handleSelectProcess(p.id)"
+                          [style.cursor]="canSelect ? 'pointer' : 'not-allowed'"
+                          style="width: 16px; height: 16px; accent-color: var(--accent-gold);"
+                        />
+                      </div>
+                      
+                      <!-- Folder icon detail -->
+                      <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.06);">
+                        ⚖️
+                      </div>
+                      
+                      <div style="min-width: 0; flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                          <span style="font-weight: bold; font-size: 14px; color: var(--text-primary);">{{ p.numero_processo }}</span>
+                          <span style="font-size: 11px; color: var(--text-secondary); background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 4px;">{{ p.contexto_dinamico?.materia || 'Geral' }}</span>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                          Cliente: <strong>{{ p.cliente }}</strong> &bull; Peça: {{ p.contexto_dinamico?.tipo_peca || 'Contestação' }}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Right: Badges & Action -->
+                    <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
+                      <!-- Status Badge -->
                       @switch (p.status) {
-                        @case ('PENDENTE') { <span class="badge badge-pending">Pendente</span> }
-                        @case ('PROCESSANDO') { <span class="badge badge-processing">Processando</span> }
-                        @case ('REVISAO') { <span class="badge badge-review">Revisão</span> }
-                        @case ('ERRO_PROCESSAMENTO') { <span class="badge badge-error">Erro</span> }
-                        @default { <span class="badge">{{ p.status }}</span> }
+                        @case ('PENDENTE') { <span class="badge badge-pending" style="font-size: 11px; padding: 4px 8px;">Pendente</span> }
+                        @case ('PROCESSANDO') { <span class="badge badge-processing" style="font-size: 11px; padding: 4px 8px;">Processando</span> }
+                        @case ('REVISAO') { <span class="badge badge-review" style="font-size: 11px; padding: 4px 8px;">Revisão</span> }
+                        @case ('ERRO_PROCESSAMENTO') { <span class="badge badge-error" style="font-size: 11px; padding: 4px 8px;">Falhou</span> }
+                        @case ('PROTOCOLADO') { <span class="badge" style="background: rgba(26, 188, 156, 0.1); color: #1abc9c; border: 1px solid rgba(26, 188, 156, 0.2); font-size: 11px; padding: 4px 8px;">Aprovado</span> }
+                        @default { <span class="badge" style="font-size: 11px; padding: 4px 8px;">{{ p.status }}</span> }
                       }
-                    </td>
-                    <td>
+
+                      <!-- Limit Date -->
+                      <div style="text-align: right; font-size: 11px; color: var(--text-secondary);">
+                        <div style="color: var(--text-secondary);">Prazo:</div>
+                        <strong style="color: var(--text-primary);">
+                          @if (p.data_prazo) {
+                            {{ p.data_prazo.includes('-') ? (p.data_prazo.split('T')[0].split('-').reverse().join('/')) : p.data_prazo }}
+                          } @else {
+                            Sem Prazo
+                          }
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                }
+                
+                <!-- Pagination Controls -->
+                @if (totalPages() > 1) {
+                  <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 15px; padding: 10px 0;">
+                    <button 
+                      class="btn btn-secondary" 
+                      [disabled]="currentPage() === 1"
+                      (click)="prevPage()"
+                      style="margin: 0; padding: 5px 12px; font-size: 12px; border-radius: 6px;"
+                    >
+                      Anterior
+                    </button>
+                    <span style="font-size: 13px; color: var(--text-primary);">
+                      Página {{ currentPage() }} de {{ totalPages() }}
+                    </span>
+                    <button 
+                      class="btn btn-secondary" 
+                      [disabled]="currentPage() === totalPages()"
+                      (click)="nextPage()"
+                      style="margin: 0; padding: 5px 12px; font-size: 12px; border-radius: 6px;"
+                    >
+                      Próxima
+                    </button>
+                  </div>
+                }
+              } @else {
+                <div style="padding: 40px; text-align: center; color: var(--text-secondary); background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1);">
+                  Nenhum processo pendente na fila.
+                </div>
+              }
+            </div>
+          </div>
+          
+          <!-- Detail Column: Dynamic Actions Panel (38% width) -->
+          <div style="flex: 1; min-width: 300px; position: sticky; top: 20px; display: flex; flex-direction: column; gap: 20px;">
+            
+            @if (selectedProcesso(); as p) {
+              <!-- Detail Panel for Selected Process -->
+              <div class="metric-card" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--accent-gold); border-radius: 16px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: fadeIn 0.3s ease-out; position: relative;">
+                
+                <button 
+                  type="button" 
+                  (click)="selectedProcesso.set(null)"
+                  style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-secondary); font-size: 18px; cursor: pointer; transition: color 0.2s;"
+                  onmouseover="this.style.color='var(--text-primary)';"
+                  onmouseout="this.style.color='var(--text-secondary)';"
+                >✕</button>
+
+                <span style="font-size: 10px; text-transform: uppercase; color: var(--accent-gold); letter-spacing: 1px; font-weight: bold;">Ficha de Acompanhamento</span>
+                <h3 class="font-cinzel" style="font-size: 20px; margin: 10px 0 20px 0; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 15px;">
+                  Processo nº {{ p.numero_processo }}
+                </h3>
+
+                <!-- Process fields -->
+                <div style="display: flex; flex-direction: column; gap: 15px; font-size: 13px; margin-bottom: 25px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-secondary);">Cliente:</span>
+                    <strong style="color: var(--text-primary);">{{ p.cliente }}</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-secondary);">Matéria Jurídica:</span>
+                    <strong style="color: var(--text-primary);">{{ p.contexto_dinamico?.materia || 'Geral' }}</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-secondary);">Tipo de Peça:</span>
+                    <strong style="color: var(--text-primary);">{{ p.contexto_dinamico?.tipo_peca || 'Contestação' }}</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-secondary);">Prazo Fatal:</span>
+                    <strong style="color: var(--error-color);">
                       @if (p.data_prazo) {
                         {{ p.data_prazo.includes('-') ? (p.data_prazo.split('T')[0].split('-').reverse().join('/')) : p.data_prazo }}
                       } @else {
                         Sem Prazo
                       }
-                    </td>
-                    <td>{{ p.contexto_dinamico?.materia || 'Geral' }}</td>
-                    <td>{{ p.contexto_dinamico?.tipo_peca || 'Contestação' }}</td>
-                    <td>{{ p.revisor_nome ? (p.revisor_nome + ' (OAB: ' + (p.revisor_oab || 'N/I') + ')') : '-' }}</td>
-                    <td>
-                      @if (p.status === 'REVISAO' || p.status === 'PROTOCOLADO') {
-                        <button
-                          (click)="handleOpenReviewModal(p)"
-                          class="btn btn-primary"
-                          style="margin: 0; padding: 4px 8px; font-size: 12px;"
+                    </strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary);">Revisor Atribuído:</span>
+                    <strong style="color: var(--text-primary);">{{ p.revisor_nome || 'Nenhum' }}</strong>
+                  </div>
+                  @if (p.data_processamento) {
+                    <div style="display: flex; justify-content: space-between;">
+                      <span style="color: var(--text-secondary);">Fase Iniciada em:</span>
+                      <strong style="color: var(--text-primary);">{{ p.data_processamento.split('T')[0].split('-').reverse().join('/') }}</strong>
+                    </div>
+                  }
+                </div>
+
+                <!-- Custom actions based on status -->
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  @if (p.status === 'REVISAO' || p.status === 'PROTOCOLADO') {
+                    <button 
+                      (click)="handleOpenReviewModal(p)"
+                      class="btn btn-primary"
+                      style="width: 100%; border-radius: 8px; padding: 12px;"
+                    >
+                      🔎 {{ p.status === 'REVISAO' ? 'Revisar & Aprovar Minuta' : 'Visualizar Documento' }}
+                    </button>
+                  } @else {
+                    <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); text-align: center; margin-bottom: 10px;">
+                      <span style="font-size: 12px; color: var(--text-secondary);">Esta minuta está aguardando processamento RAG.</span>
+                    </div>
+                    
+                    <form (submit)="handleProcessCase($event); selectedProcesso.set(null)" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                      <input type="hidden" [ngModel]="p.id" name="proc-id" />
+                      <button 
+                        type="submit" 
+                        class="btn btn-primary" 
+                        style="width: 100%; border-radius: 8px; padding: 12px;"
+                      >
+                        🚀 Processar Caso Agora
+                      </button>
+                    </form>
+                  }
+                  
+                  <button 
+                    (click)="selectedProcesso.set(null)"
+                    class="btn btn-secondary"
+                    style="width: 100%; border-radius: 8px; padding: 12px;"
+                  >
+                    Voltar aos Gráficos
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <!-- Idle State: General Statistics Charts & Panels -->
+              
+              <!-- Total count card -->
+              <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 25px; display: flex; align-items: center; gap: 20px;">
+                <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                  📊
+                </div>
+                <div>
+                  <span style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); font-weight: bold; letter-spacing: 1px;">Volume Total</span>
+                  <div style="font-size: 28px; font-weight: bold; color: var(--text-primary); margin-top: 4px; font-family: 'Outfit', sans-serif;">
+                    {{ stats().total_processos }} <span style="font-size: 14px; font-weight: normal; color: var(--text-secondary);">casos</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pie Chart -->
+              <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 25px; display: flex; flex-direction: column;">
+                <h3 class="font-cinzel" style="font-size: 15px; margin-bottom: 20px; letter-spacing: 0.5px;">Visão Geral do Fluxo</h3>
+                
+                <div style="display: flex; align-items: center; justify-content: center; position: relative; min-height: 160px;">
+                  @if (pieSlices().length > 0) {
+                    <svg viewBox="0 0 100 100" style="width: 140px; height: 140px; filter: drop-shadow(0 0 12px rgba(255,255,255,0.02));">
+                      @for (slice of pieSlices(); track slice.name) {
+                        <path
+                          [attr.d]="slice.path"
+                          [attr.fill]="slice.color"
+                          stroke="rgba(18, 20, 23, 0.6)"
+                          stroke-width="1.5"
+                          style="transition: transform 0.3s ease; cursor: pointer; transform-origin: 50px 50px;"
+                          onmouseover="this.style.transform='scale(1.03)';"
+                          onmouseout="this.style.transform='scale(1)';"
                         >
-                          {{ p.status === 'REVISAO' ? '🔎 Revisar' : '👁️ Ver' }}
-                        </button>
-                      } @else {
-                        <span style="color: var(--text-secondary); font-size: 12px;">-</span>
+                          <title>{{ slice.name }}: {{ slice.count }} minutas ({{ slice.percentage | number:'1.0-1' }}%)</title>
+                        </path>
                       }
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          } @else {
-            <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
-              Nenhum processo pendente na fila.
-            </div>
-          }
+                    </svg>
+                    
+                    <!-- Center hole -->
+                    <div style="position: absolute; width: 50px; height: 50px; border-radius: 50%; background-color: var(--bg-secondary); border: 1px dashed rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
+                      <span style="font-size: 13px; font-weight: bold; color: var(--text-primary);">{{ stats().total_processos }}</span>
+                      <span style="font-size: 7px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px;">Minutas</span>
+                    </div>
+                  } @else {
+                    <div style="color: var(--text-secondary); font-size: 13px;">Nenhum caso cadastrado.</div>
+                  }
+                </div>
+              </div>
 
-          <!-- Pagination Controls -->
-          @if (totalPages() > 1) {
-            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; marginTop: 15px; padding: 10px 0;">
-              <button 
-                class="btn btn-secondary" 
-                [disabled]="currentPage() === 1"
-                (click)="prevPage()"
-                style="margin: 0; padding: 5px 10px; font-size: 12px;"
-              >
-                Anterior
-              </button>
-              <span style="font-size: 13px; color: var(--text-primary);">
-                Página {{ currentPage() }} de {{ totalPages() }}
-              </span>
-              <button 
-                class="btn btn-secondary" 
-                [disabled]="currentPage() === totalPages()"
-                (click)="nextPage()"
-                style="margin: 0; padding: 5px 10px; font-size: 12px;"
-              >
-                Próxima
-              </button>
-            </div>
-          }
-        </div>
+              <!-- Status bar progress charts -->
+              <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 25px;">
+                <h3 class="font-cinzel" style="font-size: 15px; margin-bottom: 25px; letter-spacing: 0.5px;">Fases da Fila</h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                  @let total = stats().total_processos || 0;
 
-        <div class="sub-section">
-          <h3 class="font-cinzel">Acionar Geração de Minuta com RAG</h3>
-          <form (submit)="handleProcessCase($event)" class="form-grid" style="align-items: flex-end;">
-            <div class="form-group">
-              <label class="form-label" for="proc-id">Digite o ID do Processo:</label>
-              <input
-                id="proc-id"
-                type="number"
-                class="form-input"
-                placeholder="Ex: 1"
-                [ngModel]="procIdToProcess()"
-                (ngModelChange)="procIdToProcess.set($event)"
-                name="proc-id"
-              />
-            </div>
-            <button type="submit" class="btn btn-primary">🚀 Processar Caso</button>
-          </form>
-          @if (procMsg(); as msg) {
-            <div class="alert" [class.alert-success]="msg.type === 'success'" [class.alert-error]="msg.type === 'error'" style="margin-top: 10px;">{{ msg.text }}</div>
-          }
-        </div>
+                  <!-- Pendentes -->
+                  @let pPct = total > 0 ? ((stats().status_counts?.PENDENTE || 0) / total) * 100 : 0;
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 6px; height: 6px; border-radius: 50%; background-color: #e67e22; box-shadow: 0 0 6px #e67e22;"></div>
+                        <span style="color: var(--text-secondary);">Pendentes</span>
+                      </div>
+                      <span style="color: var(--text-primary); font-weight: bold;">
+                        {{ stats().status_counts?.PENDENTE || 0 }} <span style="font-size: 10px; font-weight: 400; color: var(--text-secondary);">({{ pPct | number:'1.0-1' }}%)</span>
+                      </span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden;">
+                      <div [style.width.%]="pPct" style="height: 100%; background: linear-gradient(90deg, #d35400 0%, #e67e22 100%); box-shadow: 0 0 10px rgba(230, 126, 34, 0.5); border-radius: 3px; transition: width 0.8s ease-out;"></div>
+                    </div>
+                  </div>
 
-        <div class="sub-section">
-          <h3 class="font-cinzel">Cadastrar Novos Casos na Fila via CSV</h3>
-          <div class="file-uploader">
-            <span class="upload-icon">📥</span>
-            <p class="upload-text"><strong>Selecione a planilha de processos</strong> ou arraste o arquivo .CSV</p>
-            <input
-              type="file"
-              accept=".csv"
-              class="file-input"
-              (change)="handleUploadProcessos($event)"
-            />
+                  <!-- Em Processo -->
+                  @let prPct = total > 0 ? ((stats().status_counts?.PROCESSANDO || 0) / total) * 100 : 0;
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 6px; height: 6px; border-radius: 50%; background-color: #3498db; box-shadow: 0 0 6px #3498db;"></div>
+                        <span style="color: var(--text-secondary);">Processando</span>
+                      </div>
+                      <span style="color: var(--text-primary); font-weight: bold;">
+                        {{ stats().status_counts?.PROCESSANDO || 0 }} <span style="font-size: 10px; font-weight: 400; color: var(--text-secondary);">({{ prPct | number:'1.0-1' }}%)</span>
+                      </span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden;">
+                      <div [style.width.%]="prPct" style="height: 100%; background: linear-gradient(90deg, #2980b9 0%, #3498db 100%); box-shadow: 0 0 10px rgba(52, 152, 219, 0.5); border-radius: 3px; transition: width 0.8s ease-out;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Revisão -->
+                  @let revPct = total > 0 ? ((stats().status_counts?.REVISAO || 0) / total) * 100 : 0;
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 6px; height: 6px; border-radius: 50%; background-color: #2ecc71; box-shadow: 0 0 6px #2ecc71;"></div>
+                        <span style="color: var(--text-secondary);">Revisão</span>
+                      </div>
+                      <span style="color: var(--text-primary); font-weight: bold;">
+                        {{ stats().status_counts?.REVISAO || 0 }} <span style="font-size: 10px; font-weight: 400; color: var(--text-secondary);">({{ revPct | number:'1.0-1' }}%)</span>
+                      </span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden;">
+                      <div [style.width.%]="revPct" style="height: 100%; background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%); box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); border-radius: 3px; transition: width 0.8s ease-out;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Aprovados -->
+                  @let protPct = total > 0 ? ((stats().status_counts?.PROTOCOLADO || 0) / total) * 100 : 0;
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <div style="width: 6px; height: 6px; border-radius: 50%; background-color: #1abc9c; box-shadow: 0 0 6px #1abc9c;"></div>
+                        <span style="color: var(--text-secondary);">Aprovados</span>
+                      </div>
+                      <span style="color: var(--text-primary); font-weight: bold;">
+                        {{ stats().status_counts?.PROTOCOLADO || 0 }} <span style="font-size: 10px; font-weight: 400; color: var(--text-secondary);">({{ protPct | number:'1.0-1' }}%)</span>
+                      </span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden;">
+                      <div [style.width.%]="protPct" style="height: 100%; background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%); box-shadow: 0 0 10px rgba(26, 188, 156, 0.5); border-radius: 3px; transition: width 0.8s ease-out;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
           </div>
-          @if (csvProcMsg(); as msg) {
-            <div class="alert" [class.alert-success]="msg.type === 'success'" [class.alert-error]="msg.type === 'error'" style="margin-top: 10px;">{{ msg.text }}</div>
-          }
+
         </div>
+
       </div>
     }
 
-    <!-- Tab 2: Cofre RAG -->
-    @if (activeTab() === 2) {
+
+
+    <!-- Tab 1: Cofre RAG -->
+    @if (activeTab() === 1) {
       <div class="section">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h2 class="font-cinzel" style="margin: 0;">Cofre RAG</h2>
@@ -642,8 +644,8 @@
       </div>
     }
 
-    <!-- Tab 3: Admin / Config -->
-    @if (activeTab() === 3 && authService.user()?.cargo === 'admin') {
+    <!-- Tab 2: Admin / Config -->
+    @if (activeTab() === 2 && authService.user()?.cargo === 'admin') {
       <div class="section">
         <div class="sub-section">
           <h3 class="font-cinzel">🎨 Personalização Visual da Interface</h3>
