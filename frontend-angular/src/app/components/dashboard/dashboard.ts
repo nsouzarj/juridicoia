@@ -284,12 +284,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     effect(() => {
       const tab = this.activeTab();
       const currentUser = this.authService.user();
-      if (tab === 2) {
+      
+      // Se o usuário logado for admin, carrega a lista de revisores/usuários necessária para a Fila (Tab 0) e Configurações (Tab 2)
+      if (currentUser && currentUser.cargo === 'admin') {
+        this.fetchUsuarios();
+      }
+
+      if (tab === 1) {
         this.fetchJurisprudencias();
         this.fetchMaterias();
-      } else if (tab === 3 && currentUser && currentUser.cargo === 'admin') {
+      } else if (tab === 2 && currentUser && currentUser.cargo === 'admin') {
         this.fetchPastas();
-        this.fetchUsuarios();
       }
     });
   }
