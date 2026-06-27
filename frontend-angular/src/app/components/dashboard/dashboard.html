@@ -650,8 +650,8 @@
 
 
 
-    <!-- Tab 1: Cofre RAG -->
-    @if (activeTab() === 1) {
+    <!-- Tab 2: Cofre RAG -->
+    @if (activeTab() === 2) {
       <div class="section">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h2 class="font-cinzel" style="margin: 0;">Cofre RAG</h2>
@@ -773,8 +773,8 @@
       </div>
     }
 
-    <!-- Tab 2: Admin / Config -->
-    @if (activeTab() === 2 && authService.user()?.cargo === 'admin') {
+    <!-- Tab 3: Admin / Config -->
+    @if (activeTab() === 3 && authService.user()?.cargo === 'admin') {
       <div class="section">
         <div class="sub-section">
           <h3 class="font-cinzel">🎨 Personalização Visual da Interface</h3>
