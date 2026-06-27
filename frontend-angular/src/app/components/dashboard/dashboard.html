@@ -145,10 +145,7 @@
             <h3 class="font-cinzel" style="font-size: 16px; margin-bottom: 25px; letter-spacing: 1px;">Distribuição e Fluxo de Minutas</h3>
             
             <div style="display: flex; flex-direction: column; gap: 20px;">
-              @let total = stats().total_processos || 0;
-
               <!-- Pendentes -->
-              @let pPct = total > 0 ? ((stats().status_counts?.PENDENTE || 0) / total) * 100 : 0;
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -156,16 +153,15 @@
                     <span style="color: var(--text-secondary); font-weight: 500;">Pendentes</span>
                   </div>
                   <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.PENDENTE || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ pPct | number:'1.0-1' }}%)</span>
+                    {{ stats().status_counts?.PENDENTE || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ statsPercentages().pendente | number:'1.0-1' }}%)</span>
                   </span>
                 </div>
                 <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="pPct" style="height: 100%; background: linear-gradient(90deg, #d35400 0%, #e67e22 100%); box-shadow: 0 0 10px rgba(230, 126, 34, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
+                  <div [style.width]="statsPercentages().pendente + '%'" style="height: 100%; background: linear-gradient(90deg, #d35400 0%, #e67e22 100%); box-shadow: 0 0 10px rgba(230, 126, 34, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
                 </div>
               </div>
 
               <!-- Em Processo -->
-              @let prPct = total > 0 ? ((stats().status_counts?.PROCESSANDO || 0) / total) * 100 : 0;
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -173,16 +169,15 @@
                     <span style="color: var(--text-secondary); font-weight: 500;">Em Processamento</span>
                   </div>
                   <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.PROCESSANDO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ prPct | number:'1.0-1' }}%)</span>
+                    {{ stats().status_counts?.PROCESSANDO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ statsPercentages().processando | number:'1.0-1' }}%)</span>
                   </span>
                 </div>
                 <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="prPct" style="height: 100%; background: linear-gradient(90deg, #2980b9 0%, #3498db 100%); box-shadow: 0 0 10px rgba(52, 152, 219, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
+                  <div [style.width]="statsPercentages().processando + '%'" style="height: 100%; background: linear-gradient(90deg, #2980b9 0%, #3498db 100%); box-shadow: 0 0 10px rgba(52, 152, 219, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
                 </div>
               </div>
 
               <!-- Revisão -->
-              @let revPct = total > 0 ? ((stats().status_counts?.REVISAO || 0) / total) * 100 : 0;
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -190,16 +185,15 @@
                     <span style="color: var(--text-secondary); font-weight: 500;">Em Revisão</span>
                   </div>
                   <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.REVISAO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ revPct | number:'1.0-1' }}%)</span>
+                    {{ stats().status_counts?.REVISAO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ statsPercentages().revisao | number:'1.0-1' }}%)</span>
                   </span>
                 </div>
                 <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="revPct" style="height: 100%; background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%); box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
+                  <div [style.width]="statsPercentages().revisao + '%'" style="height: 100%; background: linear-gradient(90deg, #27ae60 0%, #2ecc71 100%); box-shadow: 0 0 10px rgba(46, 204, 113, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
                 </div>
               </div>
 
               <!-- Aprovados -->
-              @let protPct = total > 0 ? ((stats().status_counts?.PROTOCOLADO || 0) / total) * 100 : 0;
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -207,16 +201,15 @@
                     <span style="color: var(--text-secondary); font-weight: 500;">Aprovados</span>
                   </div>
                   <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.PROTOCOLADO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ protPct | number:'1.0-1' }}%)</span>
+                    {{ stats().status_counts?.PROTOCOLADO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ statsPercentages().protocolado | number:'1.0-1' }}%)</span>
                   </span>
                 </div>
                 <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="protPct" style="height: 100%; background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%); box-shadow: 0 0 10px rgba(26, 188, 156, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
+                  <div [style.width]="statsPercentages().protocolado + '%'" style="height: 100%; background: linear-gradient(90deg, #16a085 0%, #1abc9c 100%); box-shadow: 0 0 10px rgba(26, 188, 156, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
                 </div>
               </div>
 
               <!-- Falhas -->
-              @let errPct = total > 0 ? ((stats().status_counts?.ERRO_PROCESSAMENTO || 0) / total) * 100 : 0;
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -224,11 +217,11 @@
                     <span style="color: var(--text-secondary); font-weight: 500;">Falhas de Geração</span>
                   </div>
                   <span style="color: var(--text-primary); font-weight: bold;">
-                    {{ stats().status_counts?.ERRO_PROCESSAMENTO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ errPct | number:'1.0-1' }}%)</span>
+                    {{ stats().status_counts?.ERRO_PROCESSAMENTO || 0 }} <span style="font-size: 11px; font-weight: 400; color: var(--text-secondary);">({{ statsPercentages().erro | number:'1.0-1' }}%)</span>
                   </span>
                 </div>
                 <div style="height: 8px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; position: relative;">
-                  <div [style.width.%]="errPct" style="height: 100%; background: linear-gradient(90deg, #c0392b 0%, #e74c3c 100%); box-shadow: 0 0 10px rgba(231, 76, 60, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
+                  <div [style.width]="statsPercentages().erro + '%'" style="height: 100%; background: linear-gradient(90deg, #c0392b 0%, #e74c3c 100%); box-shadow: 0 0 10px rgba(231, 76, 60, 0.5); border-radius: 4px; transition: width 0.8s ease-out;"></div>
                 </div>
               </div>
             </div>

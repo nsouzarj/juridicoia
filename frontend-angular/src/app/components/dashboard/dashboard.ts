@@ -229,6 +229,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return slices;
   });
 
+  statsPercentages = computed(() => {
+    const stats = this.stats();
+    const total = stats.total_processos || 0;
+    const counts = stats.status_counts || {};
+    
+    return {
+      total,
+      pendente: total > 0 ? ((counts.PENDENTE || 0) / total) * 100 : 0,
+      processando: total > 0 ? ((counts.PROCESSANDO || 0) / total) * 100 : 0,
+      revisao: total > 0 ? ((counts.REVISAO || 0) / total) * 100 : 0,
+      protocolado: total > 0 ? ((counts.PROTOCOLADO || 0) / total) * 100 : 0,
+      erro: total > 0 ? ((counts.ERRO_PROCESSAMENTO || 0) / total) * 100 : 0
+    };
+  });
+
   // Object keys helper for templates
   get statsMateriaEntries() {
     return Object.entries(this.stats().materia_counts || {}).map(([key, val]) => ({
