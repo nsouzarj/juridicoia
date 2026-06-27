@@ -6,11 +6,11 @@ Este documento serve como referência técnica completa para o funcionamento, ar
 
 ## 🏛️ 1. Arquitetura Geral do Ecossistema
 
-O ecossistema é composto por uma interface web React, uma API FastAPI, um banco de dados relacional/vetorial PostgreSQL e workers assíncronos.
+O ecossistema é composto por interfaces web (React e Angular), uma API FastAPI, um banco de dados relacional/vetorial PostgreSQL e workers assíncronos. Ambos os frontends se comunicam com o mesmo backend em Python.
 
 ```mermaid
 graph TD
-    subgraph FRONTEND ["🖥️  FRONTEND — React / Vite (localhost:5173)"]
+    subgraph FRONTEND_REACT ["🖥️  FRONTEND REACT — React / Vite (localhost:5173)"]
         UI_Login["🔐 Tela de Login\nJWT / Argon2id"]
         UI_Dash["📊 Painel de Estatísticas\nGráficos SVG em tempo real"]
         UI_Fila["⚖️  Fila de Casos\nOrdenada por Prazo"]
@@ -18,7 +18,15 @@ graph TD
         UI_Admin["⚙️  Admin\nGestão de Operadores"]
     end
 
-    subgraph BACKEND ["⚡ BACKEND — FastAPI / Python (localhost:8000)"]
+    subgraph FRONTEND_ANGULAR ["🖥️  FRONTEND ANGULAR — Angular v20 (localhost:4200)"]
+        UI_Login_A["🔐 Tela de Login\nJWT / Signals"]
+        UI_Dash_A["📊 Painel de Estatísticas\nGráficos SVG em tempo real"]
+        UI_Fila_A["⚖️  Fila de Casos\nOrdenada por Prazo"]
+        UI_RAG_A["📚 Cofre RAG\nPrecedentes Vetorizados"]
+        UI_Admin_A["⚙️  Admin\nGestão de Operadores"]
+    end
+
+    subgraph BACKEND ["⚡ BACKEND — FastAPI / Python (localhost:8087 / 8000)"]
         AUTH["🔑 Auth Module\nJWT + Argon2id"]
         API_PROC["📋 /processos\nCRUD + Fila"]
         API_JUR["📖 /jurisprudencia\nRAG Embeddings"]
@@ -43,6 +51,12 @@ graph TD
     UI_Fila -->|"GET/POST /processos"| API_PROC
     UI_RAG -->|"GET/POST /jurisprudencia"| API_JUR
     UI_Admin -->|"CRUD /admin"| API_ADMIN
+
+    UI_Login_A -->|"POST /auth/login"| AUTH
+    UI_Dash_A -->|"GET /processos/estatisticas"| API_PROC
+    UI_Fila_A -->|"GET/POST /processos"| API_PROC
+    UI_RAG_A -->|"GET/POST /jurisprudencia"| API_JUR
+    UI_Admin_A -->|"CRUD /admin"| API_ADMIN
 
     AUTH --> DB_USR
     API_PROC --> DB_PROC

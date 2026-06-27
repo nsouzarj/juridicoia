@@ -36,3 +36,13 @@ services:
       - "5173:80"
     depends_on:
       - backend
+
+  frontend-angular:
+    build: ./frontend-angular
+    container_name: praxis_frontend_angular
+    restart: always
+    ports:
+      # O Nginx interno escuta na porta 80, expomos o Angular na porta 4200
+      - "4200:80"
+    depends_on:
+      - backend

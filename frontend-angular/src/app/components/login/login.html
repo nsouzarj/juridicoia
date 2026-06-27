@@ -1,0 +1,83 @@
+<div class="login-screen" style="position: relative;">
+  <button 
+    (click)="toggleTheme()" 
+    class="btn btn-secondary" 
+    style="position: absolute; top: 20px; right: 20px; margin: 0; padding: 8px 12px; font-size: 12px; z-index: 10;"
+  >
+    {{ theme() === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Escuro' }}
+  </button>
+  <div class="login-grid">
+    <div class="hero-column">
+      <h1 class="hero-title">P R A X I S<br />A U T O M A T I O N</h1>
+      <p class="hero-subtitle">Sistema de Elaboração de Peças Jurídicas & RAG Vetorial</p>
+      <div class="divider-gold"></div>
+      <p class="hero-desc">
+        Plataforma corporativa de alta precisão para contencioso cível.
+        Processamento inteligente de ementas integrado com PostgreSQL pgvector
+        e segmentação estrita de matérias.
+      </p>
+    </div>
+
+    <div class="login-column">
+      <form class="login-box" (submit)="handleSubmit($event)">
+        <h2 class="login-title font-cinzel">ACESSAR FILA</h2>
+        
+        @if (error()) {
+          <div class="alert alert-error">{{ error() }}</div>
+        }
+
+        <div class="form-group">
+          <label class="form-label" for="email">E-mail Corporativo</label>
+          <input
+            id="email"
+            type="email"
+            class="form-input"
+            placeholder="exemplo@escritorio.com"
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            name="email"
+            [disabled]="loading()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Senha</label>
+          <div style="position: relative; width: 100%;">
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              class="form-input"
+              placeholder="••••••••"
+              [ngModel]="senha()"
+              (ngModelChange)="senha.set($event)"
+              name="password"
+              [disabled]="loading()"
+              style="padding-right: 46px;"
+            />
+            <button
+              type="button"
+              (click)="showPassword.set(!showPassword())"
+              style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary, #888); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; margin: 0; min-width: auto; z-index: 5; opacity: 0.7; transition: opacity 0.2s;"
+              [title]="showPassword() ? 'Ocultar Senha' : 'Mostrar Senha'"
+            >
+              @if (showPassword()) {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+              } @else {
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+              }
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;" [disabled]="loading()">
+          {{ loading() ? '🔐 VERIFICANDO...' : '🔓 ENTRAR NO SISTEMA' }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

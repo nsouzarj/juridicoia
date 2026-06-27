@@ -24,7 +24,8 @@ O sistema é construído sobre uma arquitetura moderna e dividida em camadas:
 
 | Componente | Tecnologias Utilizadas | Propósito |
 | :--- | :--- | :--- |
-| **Frontend** | React, Vite, JavaScript, TailwindCSS | Interface do usuário rápida, responsiva e com gráficos em tempo real |
+| **Frontend (React)** | React, Vite, JavaScript, TailwindCSS | Interface original de usuário rápida e responsiva |
+| **Frontend (Angular)** | Angular v20, TypeScript, Vanilla CSS | Interface moderna alternativa com Signals e excelente performance |
 | **Backend** | Python, FastAPI, Uvicorn, Streamlit | API de alto desempenho, workers assíncronos e scripts de automação |
 | **Banco de Dados** | PostgreSQL + `pgvector` | Armazenamento de dados relacionais e busca semântica vetorial (1536 dimensões) |
 | **Autenticação** | JWT (JSON Web Tokens) + Argon2id | Autenticação segura de usuários com controle de permissões por cargo |
@@ -85,10 +86,14 @@ flowchart TD
 │   ├── banco_dados.py               # Queries SQL e conexões com o PostgreSQL
 │   ├── gerador_pecas.py             # Integração com a LLM e preenchimento de DOCX
 │   └── main.py                      # Arquivo principal da API FastAPI
-├── frontend/                # Interface web em React
+├── frontend/                # Interface web original em React
 │   ├── src/                         # Componentes, rotas e views da aplicação
 │   ├── vite.config.js               # Configuração do bundler Vite
 │   └── package.json                 # Dependências Node.js
+├── frontend-angular/        # Interface web alternativa em Angular v20
+│   ├── src/                         # Componentes e serviços da aplicação
+│   ├── tsconfig.json                # Configuração do compilador TypeScript
+│   └── package.json                 # Dependências Node.js e Angular
 ├── FLUXOS.md                # Documentação técnica e diagramas UML detalhados
 ├── docker-compose.yml       # Orquestrador local para subir o PostgreSQL + pgvector
 └── README.md                # Esta visualização geral do projeto
@@ -140,15 +145,21 @@ Caso queira iniciar apenas um dos serviços configurados no Compose:
   docker compose up -d backend
   ```
 
-* **Iniciar apenas o Frontend (sem as dependências)**:
+* **Iniciar apenas o Frontend React (sem as dependências)**:
   Como o frontend depende do backend, por padrão o Compose iniciará ambos. Para forçar a inicialização **apenas** do frontend, utilize a flag `--no-deps`:
   ```bash
   docker compose up -d --no-deps frontend
   ```
 
+* **Iniciar apenas o Frontend Angular (sem as dependências)**:
+  ```bash
+  docker compose up -d --no-deps frontend-angular
+  ```
+
 ### 4. Acessando a Plataforma
 Após os containers subirem com sucesso:
-* **Interface Web (Frontend):** Acesse `http://IP_DA_VM:5173` (ou `localhost:5173`).
+* **Interface Web React (Frontend):** Acesse `http://IP_DA_VM:5173` (ou `localhost:5173`).
+* **Interface Web Angular (Frontend):** Acesse `http://IP_DA_VM:4200` (ou `localhost:4200`).
 * **API e Swagger (Backend):** Acesse `http://IP_DA_VM:8087/docs` (ou `localhost:8087/docs`).
 
 > **📁 Arquivos Gerados:** Os documentos `.docx` das peças jurídicas e revisões serão salvos automaticamente e espelhados na pasta `./documentos_gerados` na raiz do seu projeto, graças ao volume compartilhado do Docker!
@@ -162,9 +173,14 @@ Caso necessite compilar as imagens individualmente ou precise levantar um banco 
 docker build -t praxis-backend ./backend
 ```
 
-#### B. Compilar apenas o Frontend
+#### B. Compilar apenas o Frontend React
 ```bash
 docker build -t praxis-frontend ./frontend
+```
+
+#### C. Compilar apenas o Frontend Angular
+```bash
+docker build -t praxis-frontend-angular ./frontend-angular
 ```
 
 #### C. Executar Banco de Dados (PostgreSQL + pgvector) em container separado

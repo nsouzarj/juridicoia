@@ -1,0 +1,7 @@
+<div class="app-container">
+  @if (authService.isAuthenticated()) {
+    <app-dashboard></app-dashboard>
+  } @else {
+    <app-login (onLogin)="handleLogin($event)"></app-login>
+  }
+</div>
