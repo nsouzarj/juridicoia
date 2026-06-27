@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { API_URL } from '../../config';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -13,8 +14,7 @@ import { API_URL } from '../../config';
 })
 export class LoginComponent {
   onLogin = output<string>();
-  theme = signal<string>(localStorage.getItem('theme') || 'dark');
-  toggleThemeEvent = output<void>();
+  authService = inject(AuthService);
 
   email = signal<string>('');
   senha = signal<string>('');
@@ -23,23 +23,6 @@ export class LoginComponent {
   showPassword = signal<boolean>(false);
 
   private http = inject(HttpClient);
-
-  constructor() {
-    // Sync theme locally on initialization
-    this.syncTheme(this.theme());
-  }
-
-  toggleTheme() {
-    const nextTheme = this.theme() === 'dark' ? 'light' : 'dark';
-    this.theme.set(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    this.syncTheme(nextTheme);
-    this.toggleThemeEvent.emit();
-  }
-
-  private syncTheme(theme: string) {
-    document.documentElement.setAttribute('data-theme', theme);
-  }
 
   handleSubmit(e: Event) {
     e.preventDefault();

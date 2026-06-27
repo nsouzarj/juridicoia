@@ -9,12 +9,17 @@ import { Observable } from 'rxjs';
 export class AuthService {
   private tokenSignal = signal<string | null>(sessionStorage.getItem('token') || null);
   userSignal = signal<any | null>(null);
+  private themeSignal = signal<'dark' | 'light'>((localStorage.getItem('praxis-theme') as 'dark' | 'light') || 'dark');
 
   token = computed(() => this.tokenSignal());
   user = computed(() => this.userSignal());
   isAuthenticated = computed(() => !!this.tokenSignal());
+  theme = computed(() => this.themeSignal());
 
   constructor(private http: HttpClient) {
+    // Aplica o tema inicial
+    document.documentElement.setAttribute('data-theme', this.themeSignal());
+
     // Automatically fetch user profile when token changes
     effect(() => {
       const token = this.tokenSignal();
@@ -30,6 +35,13 @@ export class AuthService {
         this.userSignal.set(null);
       }
     }, { allowSignalWrites: true });
+  }
+
+  toggleTheme(): void {
+    const next = this.themeSignal() === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('praxis-theme', next);
+    this.themeSignal.set(next);
+    document.documentElement.setAttribute('data-theme', next);
   }
 
   login(token: string): void {
