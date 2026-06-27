@@ -1406,6 +1406,7 @@
                       class="form-input"
                       [ngModel]="rev.status"
                       (ngModelChange)="updateReviewingProcessField('status', $event)"
+                      [disabled]="rev.status === 'PROTOCOLADO'"
                       name="rev-status"
                       style="cursor: pointer;"
                     >
