@@ -290,10 +290,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.fetchUsuarios();
       }
 
-      if (tab === 1) {
+      if (tab === 2) {
         this.fetchJurisprudencias();
         this.fetchMaterias();
-      } else if (tab === 2 && currentUser && currentUser.cargo === 'admin') {
+      } else if (tab === 3 && currentUser && currentUser.cargo === 'admin') {
         this.fetchPastas();
       }
     });
