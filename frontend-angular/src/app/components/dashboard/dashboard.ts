@@ -23,6 +23,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   navLayout = signal<string>(localStorage.getItem('praxis-nav-layout') || 'sidebar');
   densityLayout = signal<string>(localStorage.getItem('praxis-density-layout') || 'default');
   geometryLayout = signal<string>(localStorage.getItem('praxis-geometry-layout') || 'default');
+  bgTheme = signal<string>(localStorage.getItem('praxis-bg-theme') || 'default');
 
   // Data signals
   processos = signal<any[]>([]);
@@ -293,6 +294,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       const geometry = this.geometryLayout();
       document.documentElement.setAttribute('data-layout-geometry', geometry);
       localStorage.setItem('praxis-geometry-layout', geometry);
+    });
+
+    effect(() => {
+      const bg = this.bgTheme();
+      document.documentElement.setAttribute('data-bg-theme', bg);
+      localStorage.setItem('praxis-bg-theme', bg);
     });
 
     // Fetch tab-dependent data when activeTab changes

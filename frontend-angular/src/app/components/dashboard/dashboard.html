@@ -807,6 +807,37 @@
               </div>
             </div>
 
+            <!-- Tema de Fundo (Background) -->
+            <div style="display: flex; flex-direction: column; gap: 12px; grid-column: 1 / -1;">
+              <span class="form-label">Tema de Fundo (Modo Escuro)</span>
+              <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px;">
+                @for (b of [
+                  { id: 'default',   name: 'Carvão',    bg: '#08090A', side: '#0E1114' },
+                  { id: 'navy',      name: 'Azul Naval', bg: '#0A0F1C', side: '#0D1424' },
+                  { id: 'slate',     name: 'Pedra',     bg: '#0F1117', side: '#13161F' },
+                  { id: 'forest',    name: 'Floresta',  bg: '#080E0B', side: '#0C1510' },
+                  { id: 'midnight',  name: 'Meia Noite', bg: '#010205', side: '#040712' },
+                  { id: 'warm',      name: 'Âmbar',     bg: '#100B08', side: '#160F0B' }
+                ]; track b.id) {
+                  <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                    <button
+                      type="button"
+                      (click)="bgTheme.set(b.id)"
+                      [title]="b.name"
+                      [style.border]="bgTheme() === b.id ? '2px solid var(--accent-gold)' : '2px solid transparent'"
+                      [style.boxShadow]="bgTheme() === b.id ? '0 0 12px var(--accent-glow)' : '0 2px 8px rgba(0,0,0,0.4)'"
+                      [style.transform]="bgTheme() === b.id ? 'scale(1.12)' : 'scale(1)'"
+                      style="width: 52px; height: 36px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; overflow: hidden; display: flex; padding: 0;"
+                    >
+                      <span [style.backgroundColor]="b.side" style="width: 35%; height: 100%; display: block;"></span>
+                      <span [style.backgroundColor]="b.bg" style="flex: 1; height: 100%; display: block;"></span>
+                    </button>
+                    <span style="font-size: 10px; color: var(--text-secondary); font-weight: 500; text-align: center; white-space: nowrap;">{{ b.name }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
             <!-- Tema Claro/Escuro -->
             <div style="display: flex; flexDirection: column; gap: 8px;">
               <span class="form-label">Aparência</span>

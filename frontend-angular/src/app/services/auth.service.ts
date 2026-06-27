@@ -26,11 +26,13 @@ export class AuthService {
     const navLayout = localStorage.getItem('praxis-nav-layout') || 'sidebar';
     const densityLayout = localStorage.getItem('praxis-density-layout') || 'default';
     const geometryLayout = localStorage.getItem('praxis-geometry-layout') || 'default';
+    const bgTheme = localStorage.getItem('praxis-bg-theme') || 'default';
 
     document.documentElement.setAttribute('data-color-theme', colorTheme);
     document.documentElement.setAttribute('data-nav-layout', navLayout);
     document.documentElement.setAttribute('data-layout-density', densityLayout);
     document.documentElement.setAttribute('data-layout-geometry', geometryLayout);
+    document.documentElement.setAttribute('data-bg-theme', bgTheme);
 
     // Automatically fetch user profile when token changes
     effect(() => {
