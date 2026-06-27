@@ -17,8 +17,20 @@ export class AuthService {
   theme = computed(() => this.themeSignal());
 
   constructor(private http: HttpClient) {
-    // Aplica o tema inicial
+    // Aplica o tema inicial (claro/escuro)
     document.documentElement.setAttribute('data-theme', this.themeSignal());
+
+    // Restaura todas as preferências visuais do localStorage imediatamente,
+    // inclusive na tela de login e após o logout, sem esperar pelo DashboardComponent
+    const colorTheme = localStorage.getItem('praxis-color-theme') || 'emerald';
+    const navLayout = localStorage.getItem('praxis-nav-layout') || 'sidebar';
+    const densityLayout = localStorage.getItem('praxis-density-layout') || 'default';
+    const geometryLayout = localStorage.getItem('praxis-geometry-layout') || 'default';
+
+    document.documentElement.setAttribute('data-color-theme', colorTheme);
+    document.documentElement.setAttribute('data-nav-layout', navLayout);
+    document.documentElement.setAttribute('data-layout-density', densityLayout);
+    document.documentElement.setAttribute('data-layout-geometry', geometryLayout);
 
     // Automatically fetch user profile when token changes
     effect(() => {
