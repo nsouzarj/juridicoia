@@ -101,6 +101,27 @@ flowchart TD
 
 ---
 
+## 🔄 Atualização e Controle de Versão (Git)
+
+O repositório está configurado para utilizar branches de desenvolvimento específicas.
+
+### Rastreamento de Branch e Atualizações (`git pull`)
+A branch de desenvolvimento ativa para as otimizações do Docker é a `feature/otimizar-docker`. Ela está configurada para rastrear diretamente o repositório no GitHub (`origin/feature/otimizar-docker`).
+
+* **Para atualizar a branch local:**
+  Como a branch local já rastreia a branch remota do GitHub, basta executar o comando simples na raiz do projeto:
+  ```bash
+  git pull
+  ```
+  O Git buscará as atualizações da branch `origin/feature/otimizar-docker` e fará a mesclagem automática.
+  
+* **Para fazer o pull de forma explícita:**
+  ```bash
+  git pull origin feature/otimizar-docker
+  ```
+
+---
+
 ## 🚀 Como Executar o Projeto (Produção e Desenvolvimento com Docker)
 
 O ambiente foi totalmente otimizado para rodar via Docker, garantindo que o Backend e o Frontend funcionem com imagens leves e seguras em qualquer sistema operacional ou servidor.
