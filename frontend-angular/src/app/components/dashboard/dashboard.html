@@ -860,6 +860,33 @@
               </div>
             </div>
 
+            <!-- Layout de Navegação -->
+            <div style="display: flex; flexDirection: column; gap: 8px;">
+              <span class="form-label">Layout de Navegação</span>
+              <div style="display: flex; gap: 8px; margin-top: 5px;">
+                <button
+                  type="button"
+                  (click)="navLayout.set('sidebar')"
+                  class="btn"
+                  [class.btn-primary]="navLayout() === 'sidebar'"
+                  [class.btn-secondary]="navLayout() !== 'sidebar'"
+                  style="flex: 1; padding: 8px 12px; font-size: 12px;"
+                >
+                  Lateral
+                </button>
+                <button
+                  type="button"
+                  (click)="navLayout.set('top')"
+                  class="btn"
+                  [class.btn-primary]="navLayout() === 'top'"
+                  [class.btn-secondary]="navLayout() !== 'top'"
+                  style="flex: 1; padding: 8px 12px; font-size: 12px;"
+                >
+                  Superior
+                </button>
+              </div>
+            </div>
+
             <!-- Densidade Visual -->
             <div style="display: flex; flexDirection: column; gap: 8px;">
               <span class="form-label">Densidade Visual</span>
