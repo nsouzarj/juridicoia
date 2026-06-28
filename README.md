@@ -156,6 +156,28 @@ Caso queira iniciar apenas um dos serviços configurados no Compose:
   docker compose up -d --no-deps frontend-angular
   ```
 
+### 3.2. Detalhes de Funcionamento e Portas dos Frontends no Docker
+
+O repositório possui duas interfaces de frontend que rodam em containers Nginx alpinos de forma independente:
+
+#### A. Frontend React (Vite)
+* **Serviço no Compose**: `frontend`
+* **Porta Exposta**: `5173` (mapeada para a porta interna `80` do Nginx)
+* **Funcionamento e API**:
+  * Ao ser empacotada no Docker, a aplicação React é compilada em arquivos estáticos (HTML/JS/CSS) e servida pelo Nginx.
+  * A comunicação com a API do backend ocorre diretamente a partir do navegador do usuário.
+  * Por padrão, a URL da API é resolvida dinamicamente no navegador para `http://<IP_DO_VISITANTE>:8000`. Caso o seu backend esteja em outra porta (como a porta `8087` exposta pelo compose), você pode passar a variável de ambiente `VITE_API_URL` ao compilar:
+    ```bash
+    docker build --build-arg VITE_API_URL=http://<IP_DO_BACKEND>:8087 -t praxis-frontend ./frontend
+    ```
+
+#### B. Frontend Angular (v20)
+* **Serviço no Compose**: `frontend-angular`
+* **Porta Exposta**: `4200` (mapeada para a porta interna `80` do Nginx)
+* **Funcionamento e API**:
+  * Os arquivos compilados do Angular são servidos por um servidor Nginx interno com suporte a roteamento SPA (Single Page Application).
+  * A URL da API é definida no arquivo `config.ts`. Se acessado via `localhost`, ele tentará se comunicar com o backend no IP fixo `http://192.168.1.107:8087` ou na porta `8087` sob o mesmo hostname detectado (`http://${window.location.hostname}:8087`).
+
 ### 4. Acessando a Plataforma
 Após os containers subirem com sucesso:
 * **Interface Web React (Frontend):** Acesse `http://IP_DA_VM:5173` (ou `localhost:5173`).
