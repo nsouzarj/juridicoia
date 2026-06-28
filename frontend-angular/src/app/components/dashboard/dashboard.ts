@@ -430,16 +430,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.http.post<any>(`${API_URL}/processos/${procId}/processar`, {}, { headers: this.headers }).subscribe({
       next: () => {
-        this.procMsg.set({
-          type: 'success',
-          text: 'Processamento iniciado em background! Atualize a página em alguns instantes.'
-        });
+        const msg = 'Processamento iniciado em background! Atualize a página em alguns instantes.';
+        this.procMsg.set({ type: 'success', text: msg });
+        this.authService.showToast(msg, 'success');
         this.procIdToProcess.set('');
         this.fetchProcessos();
         this.processingMessage.set(null);
       },
       error: (err) => {
-        this.procMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao processar caso.' });
+        const errorMsg = err.error?.detail || 'Erro ao processar caso.';
+        this.procMsg.set({ type: 'error', text: errorMsg });
+        this.authService.showToast(errorMsg, 'error');
         this.processingMessage.set(null);
       }
     });
@@ -481,16 +482,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
         this.http.post<any>(`${API_URL}/processos/processar-lote`, payload, { headers: this.headers }).subscribe({
           next: (data) => {
-            this.procMsg.set({
-              type: 'success',
-              text: data.message || 'Processamento em lote iniciado em segundo plano!'
-            });
+            const msg = data.message || 'Processamento em lote iniciado em segundo plano!';
+            this.procMsg.set({ type: 'success', text: msg });
+            this.authService.showToast(msg, 'success');
             this.selectedProcessIds.set([]);
             this.fetchProcessos();
             this.processingMessage.set(null);
           },
           error: (err) => {
-            this.procMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao processar lote.' });
+            const errorMsg = err.error?.detail || 'Erro ao processar lote.';
+            this.procMsg.set({ type: 'error', text: errorMsg });
+            this.authService.showToast(errorMsg, 'error');
             this.processingMessage.set(null);
           }
         });
@@ -528,10 +530,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
       request.subscribe({
         next: () => {
-          this.jurMsg.set({
-            type: 'success',
-            text: editMode ? 'Precedente atualizado com sucesso!' : 'Precedente cadastrado com sucesso!'
-          });
+          const msg = editMode ? 'Precedente atualizado com sucesso!' : 'Precedente cadastrado com sucesso!';
+          this.jurMsg.set({ type: 'success', text: msg });
+          this.authService.showToast(msg, 'success');
           this.cadastroJur.set({ ementa: '', tribunal: '', processo: '', materia: '' });
           this.editingPrecedent.set(null);
           this.isPrecedentModalOpen.set(false);
@@ -539,7 +540,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.processingMessage.set(null);
         },
         error: (err) => {
-          this.jurMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao salvar precedente.' });
+          const errorMsg = err.error?.detail || 'Erro ao salvar precedente.';
+          this.jurMsg.set({ type: 'error', text: errorMsg });
+          this.authService.showToast(errorMsg, 'error');
           this.processingMessage.set(null);
         }
       });
@@ -578,12 +581,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
         this.http.delete<any>(`${API_URL}/jurisprudencia/${precedent.id}`, { headers: this.headers }).subscribe({
           next: () => {
-            this.jurMsg.set({ type: 'success', text: 'Precedente excluído com sucesso!' });
+            const msg = 'Precedente excluído com sucesso!';
+            this.jurMsg.set({ type: 'success', text: msg });
+            this.authService.showToast(msg, 'success');
             this.fetchJurisprudencias();
             this.processingMessage.set(null);
           },
           error: (err) => {
-            this.jurMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao excluir precedente.' });
+            const errorMsg = err.error?.detail || 'Erro ao excluir precedente.';
+            this.jurMsg.set({ type: 'error', text: errorMsg });
+            this.authService.showToast(errorMsg, 'error');
             this.processingMessage.set(null);
           }
         });
@@ -608,12 +615,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.userMsg.set(null);
         this.http.post<any>(`${API_URL}/auth/register`, form, { headers: this.headers }).subscribe({
           next: () => {
-            this.userMsg.set({ type: 'success', text: `Conta criada com sucesso para ${form.nome}!` });
+            const msg = `Conta criada com sucesso para ${form.nome}!`;
+            this.userMsg.set({ type: 'success', text: msg });
+            this.authService.showToast(msg, 'success');
             this.cadastroUser.set({ nome: '', email: '', senha: '', cargo: 'advogado', oab: '' });
             this.fetchUsuarios();
           },
           error: (err) => {
-            this.userMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao registrar usuário.' });
+            const errorMsg = err.error?.detail || 'Erro ao registrar usuário.';
+            this.userMsg.set({ type: 'error', text: errorMsg });
+            this.authService.showToast(errorMsg, 'error');
           }
         });
       }
@@ -658,12 +669,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
           .put<any>(`${API_URL}/admin/usuarios/${form.id}`, payload, { headers: this.headers })
           .subscribe({
             next: () => {
-              this.userMsg.set({ type: 'success', text: `Usuário ${form.nome} atualizado com sucesso!` });
+              const msg = `Usuário ${form.nome} atualizado com sucesso!`;
+              this.userMsg.set({ type: 'success', text: msg });
+              this.authService.showToast(msg, 'success');
               this.isEditUserModalOpen.set(false);
               this.fetchUsuarios();
             },
             error: (err) => {
-              this.userMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao editar usuário.' });
+              const errorMsg = err.error?.detail || 'Erro ao editar usuário.';
+              this.userMsg.set({ type: 'error', text: errorMsg });
+              this.authService.showToast(errorMsg, 'error');
             }
           });
       }
@@ -678,11 +693,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.userMsg.set(null);
         this.http.delete<any>(`${API_URL}/admin/usuarios/${userToDelete.id}`, { headers: this.headers }).subscribe({
           next: () => {
-            this.userMsg.set({ type: 'success', text: `Usuário ${userToDelete.nome} excluído com sucesso!` });
+            const msg = `Usuário ${userToDelete.nome} excluído com sucesso!`;
+            this.userMsg.set({ type: 'success', text: msg });
+            this.authService.showToast(msg, 'success');
             this.fetchUsuarios();
           },
           error: (err) => {
-            this.userMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao excluir usuário.' });
+            const errorMsg = err.error?.detail || 'Erro ao excluir usuário.';
+            this.userMsg.set({ type: 'error', text: errorMsg });
+            this.authService.showToast(errorMsg, 'error');
           }
         });
       },
@@ -703,12 +722,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.pastaMsg.set(null);
       this.http.post<any>(`${API_URL}/admin/pastas`, { caminho }, { headers: this.headers }).subscribe({
         next: () => {
-          this.pastaMsg.set({ type: 'success', text: 'Pasta cadastrada com sucesso!' });
+          const msg = 'Pasta cadastrada com sucesso!';
+          this.pastaMsg.set({ type: 'success', text: msg });
+          this.authService.showToast(msg, 'success');
           this.newPastaCaminho.set('');
           this.fetchPastas();
         },
         error: (err) => {
-          this.pastaMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao cadastrar pasta.' });
+          const errorMsg = err.error?.detail || 'Erro ao cadastrar pasta.';
+          this.pastaMsg.set({ type: 'error', text: errorMsg });
+          this.authService.showToast(errorMsg, 'error');
         }
       });
     });
@@ -719,11 +742,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.pastaMsg.set(null);
       this.http.post<any>(`${API_URL}/admin/pastas/${pastaId}/ativar`, {}, { headers: this.headers }).subscribe({
         next: () => {
-          this.pastaMsg.set({ type: 'success', text: 'Pasta ativada com sucesso!' });
+          const msg = 'Pasta ativada com sucesso!';
+          this.pastaMsg.set({ type: 'success', text: msg });
+          this.authService.showToast(msg, 'success');
           this.fetchPastas();
         },
         error: (err) => {
-          this.pastaMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao ativar pasta.' });
+          const errorMsg = err.error?.detail || 'Erro ao ativar pasta.';
+          this.pastaMsg.set({ type: 'error', text: errorMsg });
+          this.authService.showToast(errorMsg, 'error');
         }
       });
     });
@@ -737,11 +764,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.pastaMsg.set(null);
         this.http.delete<any>(`${API_URL}/admin/pastas/${pasta.id}`, { headers: this.headers }).subscribe({
           next: () => {
-            this.pastaMsg.set({ type: 'success', text: 'Pasta removida com sucesso!' });
+            const msg = 'Pasta removida com sucesso!';
+            this.pastaMsg.set({ type: 'success', text: msg });
+            this.authService.showToast(msg, 'success');
             this.fetchPastas();
           },
           error: (err) => {
-            this.pastaMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao excluir pasta.' });
+            const errorMsg = err.error?.detail || 'Erro ao excluir pasta.';
+            this.pastaMsg.set({ type: 'error', text: errorMsg });
+            this.authService.showToast(errorMsg, 'error');
           }
         });
       },
@@ -823,11 +854,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
         .put<any>(`${API_URL}/processos/${rev.id}`, payload, { headers: this.headers })
         .subscribe({
           next: () => {
-            this.reviewMsg.set({ type: 'success', text: 'Rascunho salvo com sucesso!' });
+            const msg = 'Rascunho salvo com sucesso!';
+            this.reviewMsg.set({ type: 'success', text: msg });
+            this.authService.showToast(msg, 'success');
             this.fetchProcessos();
           },
           error: (err) => {
-            this.reviewMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao salvar rascunho.' });
+            const errorMsg = err.error?.detail || 'Erro ao salvar rascunho.';
+            this.reviewMsg.set({ type: 'error', text: errorMsg });
+            this.authService.showToast(errorMsg, 'error');
           }
         });
     });
@@ -865,25 +900,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
                 .post<any>(`${API_URL}/processos/${rev.id}/reprocessar`, {}, { headers: this.headers })
                 .subscribe({
                   next: () => {
-                    this.reviewMsg.set({
-                      type: 'success',
-                      text: 'Geração com IA iniciada! Pode fechar este modal; o status será atualizado na fila.'
-                    });
+                    const msg = 'Geração com IA iniciada! Pode fechar este modal; o status será atualizado na fila.';
+                    this.reviewMsg.set({ type: 'success', text: msg });
+                    this.authService.showToast('Geração com IA iniciada!', 'success');
                     this.isReviewModalOpen.set(false);
                     this.fetchProcessos();
                     this.processingMessage.set(null);
                   },
                   error: (err) => {
-                    this.reviewMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao iniciar regeração.' });
+                    const errorMsg = err.error?.detail || 'Erro ao iniciar regeração.';
+                    this.reviewMsg.set({ type: 'error', text: errorMsg });
+                    this.authService.showToast(errorMsg, 'error');
                     this.processingMessage.set(null);
                   }
                 });
             },
             error: (err) => {
-              this.reviewMsg.set({
-                type: 'error',
-                text: `Erro ao salvar alterações antes de reprocessar: ${err.error?.detail || err.message}`
-              });
+              const errorMsg = `Erro ao salvar alterações antes de reprocessar: ${err.error?.detail || err.message}`;
+              this.reviewMsg.set({ type: 'error', text: errorMsg });
+              this.authService.showToast(errorMsg, 'error');
               this.processingMessage.set(null);
             }
           });
@@ -914,14 +949,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
             next: () => {
               this.isReviewModalOpen.set(false);
               this.fetchProcessos();
-              this.procMsg.set({
-                type: 'success',
-                text: `Minuta aprovada e gerada com sucesso! Arquivo disponível na fila.`
-              });
+              const msg = `Minuta aprovada e gerada com sucesso! Arquivo disponível na fila.`;
+              this.procMsg.set({ type: 'success', text: msg });
+              this.authService.showToast(msg, 'success');
               this.processingMessage.set(null);
             },
             error: (err) => {
-              this.reviewMsg.set({ type: 'error', text: err.error?.detail || 'Erro ao aprovar minuta.' });
+              const errorMsg = err.error?.detail || 'Erro ao aprovar minuta.';
+              this.reviewMsg.set({ type: 'error', text: errorMsg });
+              this.authService.showToast(errorMsg, 'error');
               this.processingMessage.set(null);
             }
           });
@@ -1124,10 +1160,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private checkCSVUploadFinished(pending: number, success: number, error: number, inputElement: any) {
     if (pending === 0) {
-      this.csvProcMsg.set({
-        type: 'success',
-        text: `Carga concluída! Inseridos: ${success} | Duplicados/Erro: ${error}`
-      });
+      const msg = `Carga concluída! Inseridos: ${success} | Duplicados/Erro: ${error}`;
+      this.csvProcMsg.set({ type: 'success', text: msg });
+      this.authService.showToast(msg, 'success');
       this.fetchProcessos();
       if (inputElement) inputElement.value = '';
       this.processingMessage.set(null);
@@ -1188,10 +1223,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private checkCSVJurUploadFinished(pending: number, success: number, error: number, inputElement: any) {
     if (pending === 0) {
-      this.csvJurMsg.set({
-        type: 'success',
-        text: `Vetorização concluída! Inseridos: ${success} | Falhas: ${error}`
-      });
+      const msg = `Vetorização concluída! Inseridos: ${success} | Falhas: ${error}`;
+      this.csvJurMsg.set({ type: 'success', text: msg });
+      this.authService.showToast(msg, 'success');
       this.fetchJurisprudencias();
       if (inputElement) inputElement.value = '';
       this.processingMessage.set(null);

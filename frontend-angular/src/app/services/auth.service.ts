@@ -16,6 +16,24 @@ export class AuthService {
   isAuthenticated = computed(() => !!this.tokenSignal());
   theme = computed(() => this.themeSignal());
 
+  // Toast notifications system
+  toasts = signal<Array<{ id: number; message: string; type: 'success' | 'error' | 'info' }>>([]);
+  private nextToastId = 0;
+
+  showToast(message: string, type: 'success' | 'error' | 'info' = 'success'): void {
+    const id = this.nextToastId++;
+    this.toasts.update(current => [...current, { id, message, type }]);
+    
+    // Auto-remove toast after 4 seconds
+    setTimeout(() => {
+      this.removeToast(id);
+    }, 4000);
+  }
+
+  removeToast(id: number): void {
+    this.toasts.update(current => current.filter(t => t.id !== id));
+  }
+
   constructor(private http: HttpClient) {
     // Aplica o tema inicial (claro/escuro)
     document.documentElement.setAttribute('data-theme', this.themeSignal());

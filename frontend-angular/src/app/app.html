@@ -5,3 +5,18 @@
     <app-login (onLogin)="handleLogin($event)"></app-login>
   }
 </div>
+
+<!-- Global Toasts Container -->
+<div class="toasts-container">
+  @for (toast of authService.toasts(); track toast.id) {
+    <div class="toast-item" [class]="'toast-' + toast.type" (click)="authService.removeToast(toast.id)">
+      <span class="toast-icon">
+        @if (toast.type === 'success') { ✅ }
+        @else if (toast.type === 'error') { ❌ }
+        @else { ℹ️ }
+      </span>
+      <span class="toast-message">{{ toast.message }}</span>
+      <button class="toast-close-btn">&times;</button>
+    </div>
+  }
+</div>

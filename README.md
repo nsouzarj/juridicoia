@@ -191,6 +191,12 @@ O repositório possui duas interfaces de frontend que rodam em containers Nginx 
     ```bash
     docker build --build-arg VITE_API_URL=http://<IP_DO_BACKEND>:8087 -t praxis-frontend ./frontend
     ```
+* **Recompilar/Atualizar após alterações locais:**
+  ```bash
+  docker compose down
+  docker compose build --no-cache frontend
+  docker compose up -d frontend
+  ```
 
 #### B. Frontend Angular (v20)
 * **Serviço no Compose**: `frontend-angular`
@@ -198,6 +204,12 @@ O repositório possui duas interfaces de frontend que rodam em containers Nginx 
 * **Funcionamento e API**:
   * Os arquivos compilados do Angular são servidos por um servidor Nginx interno com suporte a roteamento SPA (Single Page Application).
   * A URL da API é definida no arquivo `config.ts`. Se acessado via `localhost`, ele tentará se comunicar com o backend no IP fixo `http://192.168.1.107:8087` ou na porta `8087` sob o mesmo hostname detectado (`http://${window.location.hostname}:8087`).
+* **Recompilar/Atualizar após alterações locais:**
+  ```bash
+  docker compose down
+  docker compose build --no-cache frontend-angular
+  docker compose up -d frontend-angular
+  ```
 
 ### 4. Acessando a Plataforma
 Após os containers subirem com sucesso:
