@@ -809,23 +809,30 @@
 
             <!-- Tema de Fundo (Background) -->
             <div style="display: flex; flex-direction: column; gap: 12px; grid-column: 1 / -1;">
-              <span class="form-label">Tema de Fundo (Modo Escuro)</span>
+              <span class="form-label">Tema de Fundo ({{ authService.theme() === 'dark' ? 'Modo Escuro' : 'Modo Claro' }})</span>
               <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px;">
-                @for (b of [
-                  { id: 'default',   name: 'Carvão',    bg: '#08090A', side: '#0E1114' },
-                  { id: 'navy',      name: 'Azul Naval', bg: '#0A0F1C', side: '#0D1424' },
-                  { id: 'slate',     name: 'Pedra',     bg: '#0F1117', side: '#13161F' },
-                  { id: 'forest',    name: 'Floresta',  bg: '#080E0B', side: '#0C1510' },
-                  { id: 'midnight',  name: 'Meia Noite', bg: '#010205', side: '#040712' },
-                  { id: 'warm',      name: 'Âmbar',     bg: '#100B08', side: '#160F0B' }
-                ]; track b.id) {
+                @for (b of (authService.theme() === 'dark' ? [
+                  { id: 'default',   name: 'Carvão',     bg: '#08090A', side: '#0E1114' },
+                  { id: 'navy',      name: 'Azul Naval',  bg: '#0A0F1C', side: '#0D1424' },
+                  { id: 'slate',     name: 'Pedra',      bg: '#0F1117', side: '#13161F' },
+                  { id: 'forest',    name: 'Floresta',   bg: '#080E0B', side: '#0C1510' },
+                  { id: 'midnight',  name: 'Meia Noite',  bg: '#010205', side: '#040712' },
+                  { id: 'warm',      name: 'Âmbar',      bg: '#100B08', side: '#160F0B' }
+                ] : [
+                  { id: 'default',   name: 'Clássico',   bg: '#FCFAF7', side: '#ECE6DE' },
+                  { id: 'navy',      name: 'Glacial',    bg: '#F0F4F8', side: '#D9E2EC' },
+                  { id: 'slate',     name: 'Platina',    bg: '#F8F9FA', side: '#E9ECEF' },
+                  { id: 'forest',    name: 'Sálvia',     bg: '#F3F7F4', side: '#DFE9E3' },
+                  { id: 'midnight',  name: 'Neve',       bg: '#FFFFFF', side: '#F1F5F9' },
+                  { id: 'warm',      name: 'Sépia',      bg: '#FAF6EE', side: '#E7DEC4' }
+                ]); track b.id) {
                   <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
                     <button
                       type="button"
                       (click)="bgTheme.set(b.id)"
                       [title]="b.name"
                       [style.border]="bgTheme() === b.id ? '2px solid var(--accent-gold)' : '2px solid transparent'"
-                      [style.boxShadow]="bgTheme() === b.id ? '0 0 12px var(--accent-glow)' : '0 2px 8px rgba(0,0,0,0.4)'"
+                      [style.boxShadow]="bgTheme() === b.id ? '0 0 12px var(--accent-glow)' : (authService.theme() === 'dark' ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.15)')"
                       [style.transform]="bgTheme() === b.id ? 'scale(1.12)' : 'scale(1)'"
                       style="width: 52px; height: 36px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; overflow: hidden; display: flex; padding: 0;"
                     >

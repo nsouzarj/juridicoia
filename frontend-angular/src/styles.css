@@ -83,6 +83,56 @@
   --accent-glow: rgba(160, 128, 85, 0.08);
 }
 
+/* --- Variantes de fundo claro --- */
+:root[data-theme='light'][data-bg-theme='default'] {
+  --bg-primary: #FCFAF7;
+  --bg-secondary: #F4F0EB;
+  --bg-sidebar: #ECE6DE;
+  --border-color: #D5CFC7;
+  --text-primary: #1C1917;
+  --text-secondary: #6B655F;
+}
+:root[data-theme='light'][data-bg-theme='navy'] {
+  --bg-primary: #F0F4F8;
+  --bg-secondary: #E2E8F0;
+  --bg-sidebar: #D9E2EC;
+  --border-color: #BCCCDC;
+  --text-primary: #102A43;
+  --text-secondary: #486581;
+}
+:root[data-theme='light'][data-bg-theme='slate'] {
+  --bg-primary: #F8F9FA;
+  --bg-secondary: #F1F3F5;
+  --bg-sidebar: #E9ECEF;
+  --border-color: #DEE2E6;
+  --text-primary: #212529;
+  --text-secondary: #6C757D;
+}
+:root[data-theme='light'][data-bg-theme='forest'] {
+  --bg-primary: #F3F7F4;
+  --bg-secondary: #E8EFEA;
+  --bg-sidebar: #DFE9E3;
+  --border-color: #C7D7CD;
+  --text-primary: #1B3B2B;
+  --text-secondary: #4A6B5D;
+}
+:root[data-theme='light'][data-bg-theme='midnight'] {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-sidebar: #F1F5F9;
+  --border-color: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+}
+:root[data-theme='light'][data-bg-theme='warm'] {
+  --bg-primary: #FAF6EE;
+  --bg-secondary: #F1EAD8;
+  --bg-sidebar: #E7DEC4;
+  --border-color: #D0C3A5;
+  --text-primary: #2D2319;
+  --text-secondary: #705E4D;
+}
+
 /* --- Temas de cores (Dark Mode default) --- */
 :root[data-color-theme='emerald'] {
   --accent-gold: #10B981;
