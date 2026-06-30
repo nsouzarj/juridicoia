@@ -231,10 +231,10 @@
           <div class="metric-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: var(--border-radius-base); padding: 25px; display: flex; flex-direction: column;">
             <h3 class="font-cinzel" style="font-size: 16px; margin-bottom: 20px; letter-spacing: 1px;">Visão Geral do Fluxo</h3>
             
-            <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 180px;">
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 240px;">
               @if (pieSlices().length > 0) {
                 <!-- Pie SVG -->
-                <svg viewBox="0 0 100 100" style="width: 160px; height: 160px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.03));">
+                <svg viewBox="0 0 100 100" style="width: 220px; height: 220px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.03));">
                   @for (slice of pieSlices(); track slice.name) {
                     <path
                       [attr.d]="slice.path"
@@ -251,9 +251,9 @@
                 </svg>
                 
                 <!-- Center hole style detail -->
-                <div style="position: absolute; width: 60px; height: 60px; border-radius: 50%; background-color: var(--bg-secondary); border: 1px dashed rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
-                  <span style="font-size: 14px; font-weight: bold; color: var(--text-primary);">{{ stats().total_processos }}</span>
-                  <span style="font-size: 8px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px;">Minutas</span>
+                <div style="position: absolute; width: 82px; height: 82px; border-radius: 50%; background-color: var(--bg-secondary); border: 1px dashed rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
+                  <span style="font-size: 18px; font-weight: bold; color: var(--text-primary);">{{ stats().total_processos }}</span>
+                  <span style="font-size: 10px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 1px;">Minutas</span>
                 </div>
               } @else {
                 <div style="color: var(--text-secondary); font-size: 13px;">Nenhum caso cadastrado.</div>
@@ -790,7 +790,7 @@
                   { id: 'emerald',   name: 'Verde Advocacia',     color: '#10B981' },
                   { id: 'sapphire',  name: 'Azul Imperial',       color: '#3B82F6' },
                   { id: 'burgundy',  name: 'Borgonha',            color: '#E11D48' },
-                  { id: 'amethyst',  name: 'Ametista',            color: '#8B5CF6' },
+                  { id: 'amber',     name: 'Âmbar',               color: '#D97706' },
                   { id: 'copper',    name: 'Cobre',               color: '#F97316' },
                   { id: 'cyan',      name: 'Ciano',               color: '#06B6D4' },
                   { id: 'rosegold',  name: 'Rose Gold',           color: '#F43F5E' }

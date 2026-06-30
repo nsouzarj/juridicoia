@@ -149,10 +149,10 @@
   --accent-gold-hover: #FB7185;
   --accent-glow: rgba(225, 29, 72, 0.15);
 }
-:root[data-color-theme='amethyst'] {
-  --accent-gold: #8B5CF6;
-  --accent-gold-hover: #A78BFA;
-  --accent-glow: rgba(139, 92, 246, 0.15);
+:root[data-color-theme='amber'] {
+  --accent-gold: #D97706;
+  --accent-gold-hover: #F59E0B;
+  --accent-glow: rgba(217, 119, 6, 0.15);
 }
 :root[data-color-theme='copper'] {
   --accent-gold: #F97316;
@@ -186,10 +186,10 @@
   --accent-gold-hover: #9F1239;
   --accent-glow: rgba(190, 18, 60, 0.08);
 }
-:root[data-theme='light'][data-color-theme='amethyst'] {
-  --accent-gold: #7C3AED;
-  --accent-gold-hover: #6D28D9;
-  --accent-glow: rgba(124, 58, 237, 0.08);
+:root[data-theme='light'][data-color-theme='amber'] {
+  --accent-gold: #B45309;
+  --accent-gold-hover: #92400E;
+  --accent-glow: rgba(180, 83, 9, 0.08);
 }
 :root[data-theme='light'][data-color-theme='copper'] {
   --accent-gold: #EA580C;

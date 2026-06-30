@@ -138,7 +138,7 @@ GEMINI_API_KEY=sua-chave-aqui
 OPENROUTER_API_KEY=sua-chave-aqui
 
 # Conexão com o seu banco Postgres existente
-DB_HOST=192.168.1.107  # Coloque o IP do seu servidor de banco de dados
+DB_HOST=192.168.16.105  # Coloque o IP do seu servidor de banco de dados
 DB_PORT=5432
 DB_NAME=seu_banco
 DB_USER=seu_usuario
@@ -203,7 +203,7 @@ O repositório possui duas interfaces de frontend que rodam em containers Nginx 
 * **Porta Exposta**: `4200` (mapeada para a porta interna `80` do Nginx)
 * **Funcionamento e API**:
   * Os arquivos compilados do Angular são servidos por um servidor Nginx interno com suporte a roteamento SPA (Single Page Application).
-  * A URL da API é definida no arquivo `config.ts`. Se acessado via `localhost`, ele tentará se comunicar com o backend no IP fixo `http://192.168.1.107:8087` ou na porta `8087` sob o mesmo hostname detectado (`http://${window.location.hostname}:8087`).
+  * A URL da API é definida no arquivo `config.ts`. Se acessado via `localhost`, ele tentará se comunicar com o backend no IP fixo `http://192.168.16.105:8087` ou na porta `8087` sob o mesmo hostname detectado (`http://${window.location.hostname}:8087`).
 * **Recompilar/Atualizar após alterações locais:**
   ```bash
   docker compose down
