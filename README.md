@@ -217,6 +217,18 @@ Após os containers subirem com sucesso:
 * **Interface Web Angular (Frontend):** Acesse `http://IP_DA_VM:4200` (ou `localhost:4200`).
 * **API e Swagger (Backend):** Acesse `http://IP_DA_VM:8087/docs` (ou `localhost:8087/docs`).
 
+> [!TIP]
+> **📖 Documentação da API (Swagger / ReDoc):**
+> A API desenvolvida com FastAPI disponibiliza documentação interativa automática nos seguintes endereços:
+> - **Swagger UI:** [http://localhost:8087/docs](http://localhost:8087/docs) (ou `http://192.168.16.105:8087/docs` no ambiente de rede)
+> - **ReDoc:** [http://localhost:8087/redoc](http://localhost:8087/redoc) (ou `http://192.168.16.105:8087/redoc`)
+>
+> Para testar requisições protegidas diretamente no Swagger:
+> 1. Faça uma requisição para `/auth/login` (ou use a rota correspondente de autenticação) com as credenciais de teste para obter o token JWT.
+> 2. Clique no botão **Authorize** (cadeado) no topo superior direito da página do Swagger.
+> 3. Insira o token no campo de texto seguindo o formato: `Bearer seu_token_jwt_aqui`.
+> 4. Clique em **Authorize** e depois em **Close**. Agora você poderá testar todas as rotas protegidas!
+
 > **📁 Arquivos Gerados:** Os documentos `.docx` das peças jurídicas e revisões serão salvos automaticamente e espelhados na pasta `./documentos_gerados` na raiz do seu projeto, graças ao volume compartilhado do Docker!
 
 ### 5. Construindo e Executando Imagens Separadamente
@@ -291,6 +303,118 @@ O sistema suporta três perfis de acesso distintos configurados via banco de dad
 * **Administrador**: Controle total, gestão de usuários, definição de pastas de saída e reprocessamento.
 * **Advogado**: Criação de casos, importação de CSVs, alimentação da base de dados RAG e aprovação final das peças.
 * **Revisor**: Leitura dos casos cadastrados, visualização de estatísticas e controle das jurisprudências.
+
+---
+
+## 🏢 Infraestrutura Interna Recomendada (On-Premises)
+
+Para escritórios que desejam implantar o **Praxis** em um servidor local físico ou máquina virtual (on-premises) com capacidade de processamento médio de **150 processos/dia**, a infraestrutura exigida é leve, pois o maior esforço computacional (geração de texto e embeddings) é delegado às APIs das LLMs. 
+
+```mermaid
+flowchart TD
+    %% Define Styles para melhor estética visual
+    classDef remote fill:#eaecee,stroke:#7f8c8d,stroke-width:2px,color:#333;
+    classDef server fill:#fcf3cf,stroke:#f1c40f,stroke-width:2px,color:#333;
+    classDef container fill:#ebf5fb,stroke:#2980b9,stroke-width:2px,color:#333;
+    classDef external fill:#f9ebd2,stroke:#d35400,stroke-width:2px,color:#333;
+    classDef local fill:#d5f5e3,stroke:#27ae60,stroke-width:2px,color:#333;
+
+    %% Conexões Remotas
+    subgraph RemoteHome ["🏠 Trabalho Remoto / Home Office"]
+        RU["🧑‍💻 Advogado em Home Office"]:::remote
+    end
+
+    %% Rede Interna do Escritório
+    subgraph OfficeNet ["🏢 Rede Interna do Escritório (Intranet - 192.168.16.0/24)"]
+        
+        %% Usuários locais
+        subgraph LocalUsers ["💻 Usuários Internos"]
+            LU1["🧑‍⚖️ Advogado 1 (PC Local)"]:::local
+            LU2["👩‍⚖️ Revisor (Notebook)"]:::local
+        end
+
+        %% Servidor Local Dedicado
+        subgraph LocalServer ["🖥️ Servidor Local Dedicado (IP: 192.168.16.105)"]
+            
+            subgraph DockerCompose ["🐳 Ambiente Docker Compose"]
+                FE["🅰️ Frontend Angular\n(Porta 4200)"]:::container
+                BE["🐍 Backend FastAPI\n(Porta 8087)"]:::container
+                DB[("🐘 PostgreSQL + pgvector\n(Porta 5432)")]:::container
+            end
+
+            %% Armazenamento
+            subgraph DiskStorage ["💾 Armazenamento do Servidor"]
+                Vol["📁 Pasta Física de Documentos\n(/home/nelson/doc_gerados)"]:::container
+            end
+        end
+
+        %% Outros dispositivos locais
+        NAS[("🗄️ Servidor NAS / Backup Local")]:::local
+    end
+
+    %% Internet e Serviços Externos
+    subgraph PublicNet ["🌐 Internet Pública"]
+        VPN["🛡️ Servidor VPN\n(WireGuard / OpenVPN)"]:::external
+        AI["🧠 APIs de IA (OpenRouter / Gemini)"]:::external
+    end
+
+    %% Fluxos de Conexões e Roteamentos
+    RU == "Conexão Criptografada" ==> VPN
+    VPN == "Acesso seguro à Intranet" ==> LocalServer
+    
+    LU1 == "Acessa via Navegador\n(http://192.168.16.105:4200)" ==> FE
+    LU2 == "Acessa via Navegador\n(http://192.168.16.105:4200)" ==> FE
+    
+    FE == "Consome endpoints da API\n(http://192.168.16.105:8087)" ==> BE
+    BE == "Lê/Grava Casos e\nBusca Jurisprudência (RAG)" ==> DB
+    BE == "Grava arquivos .docx\n(Mapeamento de Volume)" ==> Vol
+    
+    %% Conexões de Backup
+    DB -. "pg_dump diário (Cópia de Segurança)" .-> NAS
+    Vol -. "Sincronização diária de arquivos" .-> NAS
+    
+    %% Chamadas de IA externa
+    BE == "Envia Prompts & Embeddings (HTTPS)" ==> AI
+    AI == "Retorna peças e vetores" ==> BE
+```
+ 
+
+### 📊 Estimativa de Carga
+- **Média Diária:** 150 processos.
+- **Distribuição de Trabalho:** Cerca de 20 a 25 processos gerados por hora (assumindo uma jornada de 8 horas).
+- **Tempo por Processo:** ~15 a 30 segundos (tempo de espera da resposta da API externa da LLM).
+- **Carga de Banco (PostgreSQL + pgvector):** Baixíssima latência de busca semântica (<100ms por busca de jurisprudência).
+
+---
+
+### 💻 Requisitos do Servidor / Máquina Dedicada
+
+| Componente | Especificação Mínima | Especificação Recomendada | Justificativa |
+| :--- | :--- | :--- | :--- |
+| **Processador (CPU)** | Intel i5 ou Ryzen 5 (4 Cores / 8 Threads) | Intel i7 ou Ryzen 7 (8 Cores / 16 Threads) | Gerenciamento de containers Docker e concorrência nas requisições da API. |
+| **Memória (RAM)** | 12 GB DDR4 | 16 GB ou 32 GB DDR4/DDR5 | Cache de banco de dados PostgreSQL e execução do Docker sem gargalos. |
+| **Armazenamento** | SSD SATA de 120 GB | SSD NVMe M.2 de 250 GB ou 500 GB | Rapidez na leitura/escrita do banco de dados e gravação ágil das peças em `.docx`. |
+| **Internet** | Banda Larga 15 Mbps (Down / Up) | Banda Larga 50 Mbps+ (Estável e com baixa latência) | Necessária para consultas rápidas de RAG e envio/retorno dos prompts ao OpenRouter/Gemini. |
+
+---
+
+### 🔧 Configuração da Infraestrutura Interna
+
+1. **Sistema Operacional Recomendado:**
+   - **Ubuntu Server 22.04 LTS** (ou superior) para melhor desempenho e estabilidade do Docker.
+   - **Windows 10/11 Pro** com **WSL2** (Windows Subsystem for Linux) e **Docker Desktop** configurado.
+
+2. **Arquitetura de Containers (Docker Compose):**
+   - Utilizar a orquestração do `docker-compose.yml` para rodar os 3 containers (`praxis_backend`, `praxis_frontend_angular` e o banco `PostgreSQL/pgvector`). O uso de Docker simplifica o gerenciamento de dependências e atualizações.
+
+3. **Segurança e Rede Local (Intranet):**
+   - **IP Estático:** Configurar um IP fixo na rede local para o servidor (ex: `192.168.16.105`).
+   - **Firewall:** Liberar apenas as portas `4200` (Frontend Angular) e `8087` (Backend API) para a sub-rede interna do escritório (ex: `192.168.16.0/24`). Não exponha essas portas diretamente à internet pública.
+   - **Trabalho Remoto (Home Office):** Para advogados que trabalham de casa, a conexão ao servidor interno deve ser feita de forma segura via **VPN** (ex: WireGuard, OpenVPN, Tailscale).
+
+4. **Políticas de Backup (Mandatório):**
+   - **Banco de Dados:** Configurar um script (cron job) para rodar diariamente à noite (ex: 22:00) executando o comando `pg_dump` do PostgreSQL.
+   - **Documentos Físicos:** Fazer backup diário da pasta local configurada para salvar os `.docx` (`/home/nelson/doc_gerados` ou a pasta correspondente no Windows) para um dispositivo de rede externa (NAS) ou serviço de nuvem seguro (OneDrive, Google Drive, AWS S3).
 
 ---
 

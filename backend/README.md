@@ -7,8 +7,12 @@ Serviço de backend em Python (FastAPI + PostgreSQL) para automação jurídica,
 ## 🌐 Endereços da Aplicação
 
 * **URL do Frontend (React/Vite)**: [http://localhost:5173](http://localhost:5173)
-* **URL do Backend (FastAPI)**: [http://localhost:8000](http://localhost:8000)
-* **Documentação Interativa da API (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
+* **URL do Frontend (Angular)**: [http://localhost:4200](http://localhost:4200)
+* **URL do Backend (FastAPI)**: [http://localhost:8000](http://localhost:8000) (ou `http://localhost:8087` no Docker)
+* **Documentação Interativa da API (Swagger)**: 
+  - **Local (Sem Docker):** [http://localhost:8000/docs](http://localhost:8000/docs)
+  - **Docker (Local):** [http://localhost:8087/docs](http://localhost:8087/docs)
+  - **Docker (Rede/VM):** `http://192.168.16.105:8087/docs`
 
 ---
 
