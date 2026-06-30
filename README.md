@@ -324,8 +324,14 @@ flowchart TD
         RU["🧑‍💻 Advogado em Home Office"]:::remote
     end
 
+    %% Internet e Serviços Externos
+    subgraph PublicNet ["🌐 Internet Pública"]
+        VPN["🛡️ Servidor VPN\n(Acesso Seguro à Rede)"]:::external
+        AI["🧠 APIs de IA\n(OpenRouter / Gemini)"]:::external
+    end
+
     %% Rede Interna do Escritório
-    subgraph OfficeNet ["🏢 Rede Interna do Escritório (Intranet - 192.168.16.0/24)"]
+    subgraph OfficeNet ["🏢 Rede Interna do Escritório (192.168.16.0)"]
         
         %% Usuários locais
         subgraph LocalUsers ["💻 Usuários Internos"]
@@ -333,49 +339,32 @@ flowchart TD
             LU2["👩‍⚖️ Revisor (Notebook)"]:::local
         end
 
-        %% Servidor Local Dedicado
-        subgraph LocalServer ["🖥️ Servidor Local Dedicado (IP: 192.168.16.105)"]
-            
-            subgraph DockerCompose ["🐳 Ambiente Docker Compose"]
-                FE["🅰️ Frontend Angular\n(Porta 4200)"]:::container
-                BE["🐍 Backend FastAPI\n(Porta 8087)"]:::container
-                DB[("🐘 PostgreSQL + pgvector\n(Porta 5432)")]:::container
-            end
-
-            %% Armazenamento
-            subgraph DiskStorage ["💾 Armazenamento do Servidor"]
-                Vol["📁 Pasta Física de Documentos\n(/home/nelson/doc_gerados)"]:::container
-            end
-        end
-
-        %% Outros dispositivos locais
+        %% Containers rodando no Servidor local
+        FE["🅰️ Frontend Angular\n(IP: 192.168.16.105:4200)"]:::server
+        BE["🐍 Backend FastAPI\n(IP: 192.168.16.105:8087)"]:::server
+        DB[("🐘 PostgreSQL + pgvector\n(Porta 5432)")]:::container
+        Vol["📁 Volume Físico (.docx)\n(/home/nelson/doc_gerados)"]:::container
+        
+        %% Armazenamento de Backup
         NAS[("🗄️ Servidor NAS / Backup Local")]:::local
     end
 
-    %% Internet e Serviços Externos
-    subgraph PublicNet ["🌐 Internet Pública"]
-        VPN["🛡️ Servidor VPN\n(WireGuard / OpenVPN)"]:::external
-        AI["🧠 APIs de IA (OpenRouter / Gemini)"]:::external
-    end
-
-    %% Fluxos de Conexões e Roteamentos
+    %% Fluxos de Conexões (apenas entre Nós para evitar erros de renderização)
     RU == "Conexão Criptografada" ==> VPN
-    VPN == "Acesso seguro à Intranet" ==> LocalServer
+    VPN == "Acessa IP do Servidor" ==> FE
+    VPN == "Acessa IP do Servidor" ==> BE
     
-    LU1 == "Acessa via Navegador\n(http://192.168.16.105:4200)" ==> FE
-    LU2 == "Acessa via Navegador\n(http://192.168.16.105:4200)" ==> FE
+    LU1 == "Acessa via Navegador" ==> FE
+    LU2 == "Acessa via Navegador" ==> FE
     
-    FE == "Consome endpoints da API\n(http://192.168.16.105:8087)" ==> BE
-    BE == "Lê/Grava Casos e\nBusca Jurisprudência (RAG)" ==> DB
-    BE == "Grava arquivos .docx\n(Mapeamento de Volume)" ==> Vol
+    FE == "Chamadas de API (HTTP)" ==> BE
+    BE == "Busca Vetorial & Relacional" ==> DB
+    BE == "Grava Arquivo Gerado" ==> Vol
+    BE == "Requisições de IA (HTTPS)" ==> AI
     
     %% Conexões de Backup
-    DB -. "pg_dump diário (Cópia de Segurança)" .-> NAS
-    Vol -. "Sincronização diária de arquivos" .-> NAS
-    
-    %% Chamadas de IA externa
-    BE == "Envia Prompts & Embeddings (HTTPS)" ==> AI
-    AI == "Retorna peças e vetores" ==> BE
+    DB -. "pg_dump diário" .-> NAS
+    Vol -. "Sincronização diária" .-> NAS
 ```
  
 
