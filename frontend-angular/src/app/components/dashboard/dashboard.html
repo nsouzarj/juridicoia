@@ -416,6 +416,7 @@
                       
                       <div style="min-width: 0; flex: 1;">
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                          <span style="font-size: 11px; color: var(--accent-gold); background: rgba(197, 168, 128, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: bold;">ID: {{ p.id }}</span>
                           <span style="font-weight: bold; font-size: 14px; color: var(--text-primary);">{{ p.numero_processo }}</span>
                           <span style="font-size: 11px; color: var(--text-secondary); background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 4px;">{{ p.contexto_dinamico?.materia || 'Geral' }}</span>
                         </div>
@@ -506,6 +507,10 @@
 
                 <!-- Process fields -->
                 <div style="display: flex; flex-direction: column; gap: 15px; font-size: 13px; margin-bottom: 25px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-secondary);">ID:</span>
+                    <strong style="color: var(--text-primary);">{{ p.id }}</strong>
+                  </div>
                   <div style="display: flex; justify-content: space-between;">
                     <span style="color: var(--text-secondary);">Cliente:</span>
                     <strong style="color: var(--text-primary);">{{ p.cliente }}</strong>
